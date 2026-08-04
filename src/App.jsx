@@ -13,6 +13,22 @@ const SUPABASE_URL = "https://oiwcnyolidryuixuabzs.supabase.co";
 const SUPABASE_KEY = "sb_publishable_mDhb1o9lTurpOSAto2Jv-g_tmbbFWwz";
 const BUCKET = "vistoria-fotos";
 
+/* ---------- dados oficiais da empresa (do CNPJ) ---------- */
+const EMPRESA = {
+  razao: "SOARES SERVIÇOS CONSULTORIA E LOCAÇÃO LTDA",
+  fantasia: "Soares Serviços",
+  cnpj: "38.570.390/0001-08",
+  porte: "EPP",
+  endereco: "R. Bonfim, SN, Quadra 06 Lote 01, Bouganville — Barro Alto/GO, CEP 76.390-000",
+  telefone: "(62) 8273-6369",
+  email: "soaresservicoselocacao@gmail.com",
+  responsavel: "Alex Vieira Soares",
+  respFuncao: "Responsável Técnico / Engenheiro",
+};
+
+/* Termo técnico padrão do laudo */
+const TERMO = `O objetivo da presente vistoria é a verificação da procedência e da qualidade estrutural e estética do veículo, para melhor conhecimento do bem. A ${EMPRESA.fantasia} limita-se a indicar, no momento da vistoria, eventuais avarias externas e alterações estruturais visíveis, sem desmonte de peças ou manuseio mecânico do veículo. O perfeito funcionamento de itens mecânicos, elétricos e eletrônicos, bem como a autenticidade do hodômetro, não são atestados nesta vistoria. As informações são válidas apenas para a data e o momento de sua realização. Este laudo não substitui perícia oficial e não garante, por si só, a aceitação por seguradoras ou instituições financeiras, que adotam critérios próprios.`;
+
 /* ---------- cliente REST minimalista do Supabase ---------- */
 const api = {
   headers(extra = {}) {
@@ -513,96 +529,181 @@ function Laudo({ id }) {
   itens.forEach(it => { (bySecao[it.secao] ||= []).push(it); });
   const conforme = v.parecer === "CONFORME";
 
+  // numero do laudo: ano + 6 primeiros do id
+  const numeroLaudo = `${new Date(v.concluido_em || v.criado_em).getFullYear()}-${(v.id || "").replace(/-/g, "").slice(0, 6).toUpperCase()}`;
+  const dataConc = new Date(v.concluido_em || v.criado_em);
+  // URL de validacao (o proprio laudo)
+  const urlValidacao = `${location.origin}${location.pathname}#/laudo/${v.id}`;
+  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(urlValidacao)}`;
+
+  // status por secao para os selos
+  const secaoStatus = {};
+  Object.entries(bySecao).forEach(([sec, list]) => {
+    secaoStatus[sec] = list.some(it => it.resultado === "NAO CONFORME" || it.resultado === "REMARCADO") ? "reprovado" : "aprovado";
+  });
+
   const dado = (label, val) => (
-    <div><div style={{ fontSize: 10, color: "#888", letterSpacing: .5 }}>{label}</div>
-      <div style={{ fontSize: 14, fontWeight: 600 }}>{val || "—"}</div></div>
+    <div><div style={{ fontSize: 9.5, color: "#8a94a3", letterSpacing: .5, textTransform: "uppercase" }}>{label}</div>
+      <div style={{ fontSize: 13.5, fontWeight: 600, color: "#1a2230" }}>{val || "—"}</div></div>
   );
 
+  const resultColor = (r) => (r === "OK" || r === "ORIGINAL") ? "#16a34a" : r === "NAO APLICAVEL" ? "#94a3b8" : "#dc2626";
+
   return (
-    <div style={{ background: "#f3f5f8", minHeight: "100vh", padding: "20px 0" }}>
-      <div style={{ maxWidth: 820, margin: "0 auto", padding: "0 14px" }}>
+    <div style={{ background: "#e9edf2", minHeight: "100vh", padding: "20px 0" }}>
+      <div style={{ maxWidth: 840, margin: "0 auto", padding: "0 14px" }}>
         <div className="noprint" style={{ display: "flex", gap: 8, marginBottom: 14 }}>
           <a href="#/" style={{ ...btnGhost, textDecoration: "none", color: "#333", borderColor: "#ccc" }}>← Painel</a>
-          <button style={{ ...btnPrimary, background: "#111" }} onClick={() => window.print()}>Imprimir / Salvar PDF</button>
+          <button style={{ ...btnPrimary, background: "#0f2942" }} onClick={() => window.print()}>Imprimir / Salvar PDF</button>
         </div>
 
-        <div id="laudo" style={{ background: "#fff", color: "#1a1a1a", borderRadius: 4, overflow: "hidden", boxShadow: "0 2px 20px rgba(0,0,0,.08)" }}>
-          {/* cabecalho */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "22px 26px", borderBottom: "3px solid #111" }}>
-            <div>
-              <div style={{ fontSize: 12, letterSpacing: 2, color: "#0d9488", fontWeight: 800 }}>SOARES SERVIÇOS</div>
-              <h1 style={{ margin: "2px 0 0", fontSize: 26, letterSpacing: -.5 }}>Laudo Cautelar</h1>
-              <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
-                Data: {new Date(v.concluido_em || v.criado_em).toLocaleString("pt-BR")} · Vistoriador: {v.vistoriador || "—"}
+        <div id="laudo" style={{ background: "#fff", color: "#1a2230", borderRadius: 4, overflow: "hidden", boxShadow: "0 2px 24px rgba(0,0,0,.1)" }}>
+
+          {/* ===== CABEÇALHO EMPRESA ===== */}
+          <div style={{ padding: "20px 28px 16px", borderBottom: `4px solid #0f2942` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                {/* marca / monograma */}
+                <div style={{ width: 54, height: 54, borderRadius: 10, background: "linear-gradient(135deg,#0f2942,#14b8a6)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 22, flexShrink: 0 }}>S</div>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "#0f2942", lineHeight: 1.1 }}>{EMPRESA.razao}</div>
+                  <div style={{ fontSize: 11, color: "#5b6472", marginTop: 3, lineHeight: 1.5 }}>
+                    CNPJ {EMPRESA.cnpj} · {EMPRESA.porte}<br />
+                    {EMPRESA.endereco}<br />
+                    {EMPRESA.telefone} · {EMPRESA.email}
+                  </div>
+                </div>
+              </div>
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                <div style={{ fontSize: 10, letterSpacing: 2, color: "#14b8a6", fontWeight: 800 }}>LAUDO CAUTELAR</div>
+                <div style={{ fontSize: 12, color: "#5b6472", marginTop: 2 }}>Nº {numeroLaudo}</div>
+                <div style={{
+                  marginTop: 8, padding: "6px 16px", borderRadius: 6, fontWeight: 800, fontSize: 14, color: "#fff",
+                  background: conforme ? "#16a34a" : "#dc2626", display: "inline-block",
+                }}>{v.parecer}</div>
               </div>
             </div>
-            <div style={{
-              padding: "8px 18px", borderRadius: 6, fontWeight: 800, fontSize: 15, color: "#fff",
-              background: conforme ? "#16a34a" : "#dc2626",
-            }}>{v.parecer}</div>
           </div>
 
-          {/* dados veiculo */}
-          <div style={{ padding: "18px 26px", background: "#fafbfc" }}>
-            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: "#111", marginBottom: 12 }}>DADOS DO VEÍCULO</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "14px 18px" }}>
-              {dado("PLACA", v.placa)} {dado("MARCA/MODELO", `${v.fabricante || ""} ${v.modelo || ""}`.trim())}
-              {dado("COR", v.cor)} {dado("ANO FAB/MOD", `${v.ano_fab || "—"}/${v.ano_mod || "—"}`)}
-              {dado("COMBUSTÍVEL", v.combustivel)} {dado("KM", v.km)}
-              {dado("UF", v.uf)} {dado("CHASSI", v.chassi)}
-              {dado("RENAVAM", v.renavam)} {dado("MOTOR", v.motor)} {dado("CLIENTE", v.cliente)}
+          {/* ===== DADOS DA VISTORIA ===== */}
+          <div style={{ padding: "14px 28px", background: "#f6f8fa", borderBottom: "1px solid #e4e9ef" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "10px 18px" }}>
+              {dado("Data", dataConc.toLocaleDateString("pt-BR"))}
+              {dado("Hora", dataConc.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }))}
+              {dado("Cliente", v.cliente)}
+              {dado("Vistoriador", v.vistoriador)}
             </div>
           </div>
 
-          {/* secoes */}
+          {/* ===== SELOS POR SEÇÃO ===== */}
+          <div style={{ padding: "18px 28px", borderBottom: "1px solid #e4e9ef" }}>
+            <SectionTitle>Resumo do laudo</SectionTitle>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
+              {Object.keys(bySecao).map(sec => {
+                const ok = secaoStatus[sec] === "aprovado";
+                return (
+                  <div key={sec} style={{ flex: "1 1 120px", textAlign: "center", padding: "12px 8px", borderRadius: 10, background: ok ? "#f0fdf4" : "#fef2f2", border: `1px solid ${ok ? "#bbf7d0" : "#fecaca"}` }}>
+                    <div style={{ width: 34, height: 34, margin: "0 auto 6px", borderRadius: "50%", background: ok ? "#16a34a" : "#dc2626", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 18 }}>{ok ? "✓" : "!"}</div>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: "#374151" }}>{sec}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ===== DADOS DO VEÍCULO ===== */}
+          <div style={{ padding: "18px 28px", borderBottom: "1px solid #e4e9ef" }}>
+            <SectionTitle>Dados do veículo</SectionTitle>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "14px 18px", marginTop: 12 }}>
+              {dado("Placa", v.placa)}
+              {dado("Marca/Modelo", `${v.fabricante || ""} ${v.modelo || ""}`.trim())}
+              {dado("Cor", v.cor)}
+              {dado("Ano fab/mod", `${v.ano_fab || "—"}/${v.ano_mod || "—"}`)}
+              {dado("Combustível", v.combustivel)}
+              {dado("KM", v.km)}
+              {dado("UF", v.uf)}
+              {dado("Motor", v.motor)}
+              {dado("Chassi", v.chassi)}
+              {dado("Renavam", v.renavam)}
+            </div>
+          </div>
+
+          {/* ===== SEÇÕES DE ITENS ===== */}
           {Object.entries(bySecao).map(([sec, list]) => (
-            <div key={sec} style={{ padding: "16px 26px", borderTop: "1px solid #eee" }}>
-              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: "#111", marginBottom: 10 }}>{sec}</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "7px 20px" }}>
+            <div key={sec} style={{ padding: "16px 28px", borderBottom: "1px solid #e4e9ef" }}>
+              <SectionTitle>{sec}</SectionTitle>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 24px", marginTop: 10 }}>
                 {list.map(it => (
-                  <div key={it.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, borderBottom: "1px solid #f2f2f2", paddingBottom: 4 }}>
-                    <span style={{ color: "#444" }}>{it.item}</span>
-                    <span style={{
-                      fontSize: 10.5, fontWeight: 800, padding: "2px 7px", borderRadius: 4, color: "#fff",
-                      background: (it.resultado === "OK" || it.resultado === "ORIGINAL") ? "#16a34a"
-                        : it.resultado === "NAO APLICAVEL" ? "#94a3b8" : "#dc2626",
-                    }}>{it.resultado}</span>
+                  <div key={it.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12.5, borderBottom: "1px solid #f1f4f7", paddingBottom: 4 }}>
+                    <span style={{ color: "#4b5563" }}>{it.item}</span>
+                    <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 4, color: "#fff", background: resultColor(it.resultado), whiteSpace: "nowrap" }}>{it.resultado}</span>
                   </div>
                 ))}
               </div>
             </div>
           ))}
 
-          {/* observacoes */}
+          {/* ===== OBSERVAÇÕES ===== */}
           {v.observacoes && (
-            <div style={{ padding: "16px 26px", borderTop: "1px solid #eee" }}>
-              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, marginBottom: 8 }}>OBSERVAÇÕES</div>
-              <div style={{ fontSize: 13, color: "#444", whiteSpace: "pre-wrap" }}>{v.observacoes}</div>
+            <div style={{ padding: "16px 28px", borderBottom: "1px solid #e4e9ef" }}>
+              <SectionTitle>Observações do vistoriador</SectionTitle>
+              <div style={{ fontSize: 12.5, color: "#4b5563", whiteSpace: "pre-wrap", marginTop: 8 }}>{v.observacoes}</div>
             </div>
           )}
 
-          {/* fotos */}
+          {/* ===== REGISTRO FOTOGRÁFICO ===== */}
           {fotos.length > 0 && (
-            <div style={{ padding: "16px 26px", borderTop: "1px solid #eee" }}>
-              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, marginBottom: 12 }}>REGISTRO FOTOGRÁFICO</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
+            <div style={{ padding: "16px 28px", borderBottom: "1px solid #e4e9ef" }}>
+              <SectionTitle>Registro fotográfico</SectionTitle>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginTop: 12 }}>
                 {fotos.map(f => (
-                  <div key={f.id}>
-                    <img src={f.url} alt={f.legenda} style={{ width: "100%", height: 120, objectFit: "cover", borderRadius: 6, border: "1px solid #eee" }} />
-                    <div style={{ fontSize: 10.5, color: "#666", textAlign: "center", marginTop: 4 }}>{f.legenda}</div>
+                  <div key={f.id} style={{ breakInside: "avoid" }}>
+                    <img src={f.url} alt={f.legenda} style={{ width: "100%", height: 130, objectFit: "cover", borderRadius: 6, border: "1px solid #e4e9ef" }} />
+                    <div style={{ fontSize: 10, color: "#5b6472", textAlign: "center", marginTop: 4, textTransform: "uppercase", letterSpacing: .3 }}>{f.legenda}</div>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          <div style={{ padding: "14px 26px", background: "#111", color: "#9aa5b1", fontSize: 10.5, lineHeight: 1.5 }}>
-            Laudo emitido por Soares Serviços. As informações refletem a condição do veículo no momento da vistoria.
-            Não substitui perícia oficial. Válido apenas para a data de realização.
+          {/* ===== TERMO TÉCNICO ===== */}
+          <div style={{ padding: "16px 28px", borderBottom: "1px solid #e4e9ef" }}>
+            <SectionTitle>Termo técnico</SectionTitle>
+            <div style={{ fontSize: 10.5, color: "#6b7280", lineHeight: 1.6, marginTop: 8, textAlign: "justify" }}>{TERMO}</div>
+          </div>
+
+          {/* ===== ASSINATURA + QR ===== */}
+          <div style={{ padding: "24px 28px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 20 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ borderTop: "1px solid #1a2230", width: 260, paddingTop: 6, marginTop: 30 }}>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>{EMPRESA.responsavel}</div>
+                <div style={{ fontSize: 11, color: "#5b6472" }}>{EMPRESA.respFuncao}</div>
+                <div style={{ fontSize: 11, color: "#5b6472" }}>{EMPRESA.fantasia}</div>
+              </div>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <img src={qrSrc} alt="QR de validação" style={{ width: 96, height: 96, border: "1px solid #e4e9ef", borderRadius: 6 }} />
+              <div style={{ fontSize: 9, color: "#8a94a3", marginTop: 4, maxWidth: 110 }}>Valide este laudo online</div>
+            </div>
+          </div>
+
+          {/* ===== RODAPÉ ===== */}
+          <div style={{ padding: "12px 28px", background: "#0f2942", color: "#9fb3c8", fontSize: 10, lineHeight: 1.5, display: "flex", justifyContent: "space-between" }}>
+            <span>{EMPRESA.fantasia} · {EMPRESA.cnpj}</span>
+            <span>Laudo Nº {numeroLaudo} · {dataConc.toLocaleDateString("pt-BR")}</span>
           </div>
         </div>
       </div>
-      <style>{`@media print { .noprint{display:none!important} body{background:#fff} #laudo{box-shadow:none} }`}</style>
+      <style>{`@media print { .noprint{display:none!important} body{background:#fff} #laudo{box-shadow:none;border-radius:0} @page{margin:8mm} }`}</style>
+    </div>
+  );
+}
+
+function SectionTitle({ children }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div style={{ width: 3, height: 15, background: "#14b8a6", borderRadius: 2 }} />
+      <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: .8, color: "#0f2942", textTransform: "uppercase" }}>{children}</span>
     </div>
   );
 }
