@@ -304,29 +304,43 @@ const TIPOS = {
     subtitulo: "Avaliação de emissão de fumaça preta pela escala de Ringelmann",
     resumo: "Medição de densidade colorimétrica em veículos a diesel",
     porFoto: true, // as fotos carregam o nível 1-5, não há checklist
+    tituloLaudo: "LAUDO TÉCNICO DE EMISSÃO DE FUMAÇA PRETA",
+    validadeMeses: 6,
     campos: [
-      { k: "empresa", label: "Empresa / proprietário", extra: true, largo: true },
+      { k: "empresa", label: "Proprietário ou solicitante", extra: true, largo: true },
+      { k: "equipamento", label: "Equipamento", extra: true },
       { k: "placa", label: "Placa" },
       { k: "tag", label: "TAG", extra: true },
       { k: "fabricante", label: "Marca" },
-      { k: "modelo", label: "Modelo" },
+      { k: "modelo", label: "Modelo / versão" },
       { k: "ano_fab", label: "Ano de fabricação" },
-      { k: "km", label: "Hodômetro" },
       { k: "combustivel", label: "Combustível" },
+      { k: "motor", label: "Nº do motor" },
+      { k: "potencia", label: "Potência / cilindrada", extra: true },
+      { k: "chassi", label: "Chassi", largo: true },
+      { k: "km", label: "Hodômetro" },
       { k: "condutor", label: "Condutor", extra: true },
       { k: "local_inspecao", label: "Local da medição", extra: true, largo: true },
       { k: "limite", label: "Limite aceito (nível Ringelmann)", extra: true },
     ],
     secoes: [],
-    fotos: ["Frente do veículo", "Hodômetro", "Traseira do veículo", "Escapamento"],
+    fotos: ["Frente do veículo", "Hodômetro", "Escapamento", "Traseira do veículo"],
+    // texto do laudo que a Soares ja emitia; a legislacao citada e a que
+    // a empresa adota, nao uma interpretacao nossa
+    analise: (aprovado) =>
+      `O veículo acima descrito, movido a diesel, ${aprovado ? "está dentro" : "está fora"} dos padrões de emissão de ` +
+      `fumaça preta, conforme Portaria MINTER nº 100 de 14 de julho de 1980 e Portaria IBAMA nº 85 de 17 de ` +
+      `outubro de 1996` +
+      (aprovado
+        ? ", sendo apto a executar as atividades da contratante."
+        : ". Recomenda-se manutenção corretiva do sistema de alimentação e escapamento antes da liberação para as atividades da contratante."),
     termo:
-      "A presente avaliação mede a densidade colorimétrica da fumaça emitida pelo escapamento do veículo por " +
-      "comparação visual com a escala de Ringelmann, cujos níveis de 1 a 5 correspondem a 20%, 40%, 60%, 80% e " +
-      "100% de densidade. O método é comparativo e visual, realizado em campo, e não substitui a medição por " +
-      "opacímetro nem ensaio laboratorial. O resultado reflete a condição do veículo apenas no momento e nas " +
-      "condições ambientais da medição. O limite de aceitação registrado neste laudo é o parâmetro informado " +
-      "pelo contratante para esta operação; a verificação do limite legal aplicável ao caso é de responsabilidade " +
-      "do contratante.",
+      "O presente laudo técnico tem validade de 6 (seis) meses, desde que o proprietário do veículo não realize " +
+      "qualquer manutenção que envolva ou influencie os processos mecânicos utilizados para a emissão deste laudo. " +
+      "Fica o proprietário responsável por emitir outro laudo caso venha a ocorrer tal manutenção. " +
+      "A medição foi feita por comparação visual da densidade colorimétrica da fumaça com a escala de Ringelmann, " +
+      "cujos níveis de 1 a 5 correspondem a 20%, 40%, 60%, 80% e 100% de densidade, e reflete a condição do " +
+      "veículo no momento e nas condições ambientais da medição.",
   },
 };
 
@@ -1080,6 +1094,10 @@ function Laudo({ id }) {
   const conforme = v.parecer === "CONFORME" || v.parecer === "APROVADO";
   const ring = tipo.porFoto ? resumoRingelmann(fotos) : null;
   const limiteRing = Number(extra.limite) || LIMITE_RINGELMANN_PADRAO;
+  const validade = tipo.validadeMeses
+    ? new Date(new Date(v.concluido_em || v.criado_em).setMonth(
+        new Date(v.concluido_em || v.criado_em).getMonth() + tipo.validadeMeses))
+    : null;
 
   // numero do laudo: ano + 6 primeiros do id
   const numeroLaudo = `${new Date(v.concluido_em || v.criado_em).getFullYear()}-${(v.id || "").replace(/-/g, "").slice(0, 6).toUpperCase()}`;
@@ -1129,7 +1147,7 @@ function Laudo({ id }) {
                 </div>
               </div>
               <div style={{ textAlign: "right", flexShrink: 0 }}>
-                <div style={{ fontSize: 10, letterSpacing: 1.6, color: "#14b8a6", fontWeight: 800, maxWidth: 210 }}>{tipo.nome.toUpperCase()}</div>
+                <div style={{ fontSize: 10, letterSpacing: 1.6, color: "#14b8a6", fontWeight: 800, maxWidth: 230 }}>{(tipo.tituloLaudo || tipo.nome).toUpperCase()}</div>
                 <div style={{ fontSize: 12, color: "#5b6472", marginTop: 2 }}>Nº {numeroLaudo}</div>
                 <div style={{
                   marginTop: 8, padding: "6px 16px", borderRadius: 6, fontWeight: 800, fontSize: 14, color: "#fff",
@@ -1175,6 +1193,18 @@ function Laudo({ id }) {
                       </div>
                     );
                   })}
+                </div>
+
+                {/* linha de resultado, no formato que a Soares ja usava */}
+                <div style={{
+                  marginTop: 14, padding: "10px 14px", borderRadius: 8, textAlign: "center",
+                  border: `1.5px solid ${conforme ? "#bbf7d0" : "#fecaca"}`,
+                  background: conforme ? "#f0fdf4" : "#fef2f2",
+                }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: "#1a2230", letterSpacing: .3 }}>
+                    NÍVEL AFERIDO: Nº {ring.maior} · DENS. {ring.media}% —{" "}
+                    <span style={{ color: conforme ? "#16a34a" : "#dc2626" }}>{v.parecer}</span>
+                  </span>
                 </div>
               </div>
             ) : (
@@ -1263,6 +1293,22 @@ function Laudo({ id }) {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* ===== ANÁLISE DOS DADOS COLETADOS ===== */}
+          {tipo.analise && (
+            <div style={{ padding: "16px 28px", borderBottom: "1px solid #e4e9ef" }}>
+              <SectionTitle>Análise dos dados coletados</SectionTitle>
+              <div style={{ fontSize: 12, color: "#1a2230", lineHeight: 1.65, marginTop: 8, textAlign: "justify" }}>
+                {tipo.analise(conforme)}
+              </div>
+              {validade && (
+                <div style={{ display: "flex", gap: 26, marginTop: 12 }}>
+                  {dado("Data de emissão", dataConc.toLocaleDateString("pt-BR"))}
+                  {dado(`Válido até (${tipo.validadeMeses} meses)`, validade.toLocaleDateString("pt-BR"))}
+                </div>
+              )}
             </div>
           )}
 
