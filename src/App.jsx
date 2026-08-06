@@ -373,15 +373,68 @@ const EMPRESA = {
 /* Termo técnico padrão do laudo */
 const TERMO = `O objetivo da presente vistoria é a verificação da procedência e da qualidade estrutural e estética do veículo, para melhor conhecimento do bem. A ${EMPRESA.fantasia} limita-se a indicar, no momento da vistoria, eventuais avarias externas e alterações estruturais visíveis, sem desmonte de peças ou manuseio mecânico do veículo. O perfeito funcionamento de itens mecânicos, elétricos e eletrônicos, bem como a autenticidade do hodômetro, não são atestados nesta vistoria. As informações são válidas apenas para a data e o momento de sua realização. Este laudo não substitui perícia oficial e não garante, por si só, a aceitação por seguradoras ou instituições financeiras, que adotam critérios próprios.`;
 
+/* ---------- sessao do painel (Supabase Auth) ---------- */
+const CHAVE_SESSAO = "soares_vistoria_sessao";
+let SESSAO = null;
+try { SESSAO = JSON.parse(localStorage.getItem(CHAVE_SESSAO) || "null"); } catch { SESSAO = null; }
+
+const auth = {
+  get atual() { return SESSAO; },
+  guardar(s) { SESSAO = s; localStorage.setItem(CHAVE_SESSAO, JSON.stringify(s)); },
+  sair() { SESSAO = null; localStorage.removeItem(CHAVE_SESSAO); },
+
+  async chamar(rota, corpo) {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/${rota}`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify(corpo),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error_description || d.msg || d.message || "Falha na autenticação.");
+    return d;
+  },
+
+  async entrar(email, senha) {
+    const d = await this.chamar("token?grant_type=password", { email, password: senha });
+    if (!d.access_token) throw new Error("Login sem token de acesso.");
+    this.guardar({ access_token: d.access_token, email: d.user?.email || email });
+    return d;
+  },
+
+  async criarConta(email, senha) {
+    const d = await this.chamar("signup", { email, password: senha });
+    // com confirmacao de e-mail ligada, o Supabase nao devolve token aqui
+    if (d.access_token) this.guardar({ access_token: d.access_token, email: d.user?.email || email });
+    return d;
+  },
+};
+
 /* ---------- cliente REST minimalista do Supabase ---------- */
 const api = {
   headers(extra = {}) {
     return {
       apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
+      // logado -> token do usuario (passa pelas policies de admin)
+      // anonimo -> chave publicavel, que so alcanca as funcoes RPC
+      Authorization: `Bearer ${SESSAO?.access_token || SUPABASE_KEY}`,
       "Content-Type": "application/json",
       ...extra,
     };
+  },
+
+  async rpc(funcao, args) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${funcao}`, {
+      method: "POST",
+      headers: this.headers(),
+      body: JSON.stringify(args),
+    });
+    const txt = await r.text();
+    if (!r.ok) {
+      let msg = txt;
+      try { msg = JSON.parse(txt).message || txt; } catch {}
+      throw new Error(msg);
+    }
+    return txt ? JSON.parse(txt) : null;
   },
   async select(table, query = "") {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}`, {
@@ -475,8 +528,73 @@ function Field({ label, ...p }) {
   );
 }
 
+/* =====================  LOGIN DO PAINEL  ===================== */
+function Login({ aoEntrar }) {
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [criando, setCriando] = useState(false);
+  const [erro, setErro] = useState(null);
+  const [aviso, setAviso] = useState(null);
+  const [ocupado, setOcupado] = useState(false);
+
+  async function enviar(e) {
+    e?.preventDefault();
+    setErro(null); setAviso(null); setOcupado(true);
+    try {
+      if (criando) {
+        const d = await auth.criarConta(email.trim(), senha);
+        if (d.access_token) aoEntrar();
+        else setAviso("Conta criada. Confirme o e-mail que o Supabase enviou e depois entre.");
+      } else {
+        await auth.entrar(email.trim(), senha);
+        aoEntrar();
+      }
+    } catch (ex) {
+      setErro(ex.message || "Não consegui entrar.");
+    }
+    setOcupado(false);
+  }
+
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <form onSubmit={enviar} style={{ ...card, width: "100%", maxWidth: 380 }}>
+        <div style={{ fontSize: 12, letterSpacing: 2, color: C.brand, fontWeight: 700 }}>SOARES · VISTORIAS</div>
+        <h1 style={{ margin: "6px 0 4px", fontSize: 22, letterSpacing: -.3 }}>
+          {criando ? "Criar acesso" : "Entrar no painel"}
+        </h1>
+        <div style={{ fontSize: 12.5, color: C.sub, marginBottom: 18 }}>
+          O painel é restrito. O link que você envia ao vistoriador continua funcionando sem login.
+        </div>
+
+        <Field label="E-mail" type="email" autoComplete="username" value={email}
+          onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" />
+        <Field label="Senha" type="password" value={senha}
+          autoComplete={criando ? "new-password" : "current-password"}
+          onChange={e => setSenha(e.target.value)} placeholder="••••••••" />
+
+        {erro && (
+          <div style={{ background: "#3a1d24", color: "#ffb4b4", fontSize: 12.5, padding: "9px 11px", borderRadius: 8, marginBottom: 12 }}>{erro}</div>
+        )}
+        {aviso && (
+          <div style={{ background: "#12312b", color: "#8ef0d0", fontSize: 12.5, padding: "9px 11px", borderRadius: 8, marginBottom: 12 }}>{aviso}</div>
+        )}
+
+        <button type="submit" disabled={ocupado || !email || !senha}
+          style={{ ...btnPrimary, width: "100%", opacity: ocupado || !email || !senha ? .6 : 1 }}>
+          {ocupado ? "Aguarde…" : criando ? "Criar acesso" : "Entrar"}
+        </button>
+
+        <button type="button" onClick={() => { setCriando(!criando); setErro(null); setAviso(null); }}
+          style={{ ...btnGhost, width: "100%", marginTop: 8, border: "none", color: C.sub, fontSize: 12.5 }}>
+          {criando ? "Já tenho acesso — entrar" : "Primeiro acesso — criar conta"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
 /* =====================  PAINEL  ===================== */
-function Painel() {
+function Painel({ aoSair }) {
   const [vistorias, setVistorias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [novo, setNovo] = useState(false);
@@ -484,14 +602,22 @@ function Painel() {
   const [criando, setCriando] = useState(false);
   const [linkGerado, setLinkGerado] = useState(null);
 
+  const [erroLista, setErroLista] = useState(null);
+
   const load = useCallback(async () => {
     setLoading(true);
+    setErroLista(null);
     try {
       const d = await api.select("vistorias", "select=*&order=criado_em.desc");
       setVistorias(d);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      // token vencido ou e-mail fora da lista de admins
+      if (/JWT|expired|401|not authorized/i.test(e.message || "")) { auth.sair(); aoSair?.(); return; }
+      console.error(e);
+      setErroLista(e.message || "Não consegui carregar as vistorias.");
+    }
     setLoading(false);
-  }, []);
+  }, [aoSair]);
   useEffect(() => { load(); }, [load]);
 
   async function criar() {
@@ -527,7 +653,11 @@ function Painel() {
           <div style={{ fontSize: 13, letterSpacing: 2, color: C.brand, fontWeight: 700 }}>SOARES · VISTORIAS</div>
           <h1 style={{ margin: "4px 0 0", fontSize: 26, letterSpacing: -.5 }}>Laudo Cautelar</h1>
         </div>
-        <button onClick={() => setNovo(true)} style={btnPrimary}>+ Nova vistoria</button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button onClick={() => setNovo(true)} style={btnPrimary}>+ Nova vistoria</button>
+          <button onClick={() => { auth.sair(); aoSair?.(); }} style={{ ...btnGhost, padding: "10px 12px" }}
+            title={auth.atual?.email || ""}>Sair</button>
+        </div>
       </header>
 
       {linkGerado && (
@@ -587,6 +717,12 @@ function Painel() {
         </div>
       )}
 
+      {erroLista && (
+        <div style={{ ...card, borderColor: C.bad, marginBottom: 16, color: "#ffb4b4", fontSize: 13 }}>
+          {erroLista}
+        </div>
+      )}
+
       {loading ? (
         <div style={{ color: C.sub, textAlign: "center", padding: 40 }}>Carregando…</div>
       ) : vistorias.length === 0 ? (
@@ -640,15 +776,16 @@ function Formulario({ token }) {
   useEffect(() => {
     (async () => {
       try {
-        const d = await api.select("vistorias", `token=eq.${encodeURIComponent(token)}&select=*`);
-        if (!d.length) { setErro("Vistoria não encontrada. Verifique o link."); return; }
-        if (d[0].status === "concluida") { setErro("Esta vistoria já foi concluída."); return; }
-        setVist(d[0]);
-        const t = tipoDe(d[0]);
-        const extra = d[0].dados_extra || {};
-        const init0 = { vistoriador: d[0].vistoriador || "", observacoes: "" };
+        // o token do link e a credencial: o anonimo nao acessa as tabelas
+        const d = await api.rpc("vistoria_por_token", { p_token: token });
+        if (!d) { setErro("Vistoria não encontrada. Verifique o link."); return; }
+        if (d.status === "concluida") { setErro("Esta vistoria já foi concluída."); return; }
+        setVist(d);
+        const t = tipoDe(d);
+        const extra = d.dados_extra || {};
+        const init0 = { vistoriador: d.vistoriador || "", observacoes: "" };
         t.campos.forEach(c => {
-          init0[c.k] = (c.extra ? extra[c.k] : d[0][c.k]) || "";
+          init0[c.k] = (c.extra ? extra[c.k] : d[c.k]) || "";
         });
         if (t.porFoto && !init0.limite) init0.limite = String(LIMITE_RINGELMANN_PADRAO);
         setDados(init0);
@@ -677,6 +814,11 @@ function Formulario({ token }) {
   }
 
   async function enviar() {
+    // laudo de medicao sem medicao nao pode gerar parecer
+    if (tipo.porFoto && !fotos.some(f => f.nivel)) {
+      alert("Este laudo é uma medição: anexe ao menos uma foto da fumaça e marque o nível da escala Ringelmann antes de finalizar.");
+      return;
+    }
     // envio e irreversivel: a vistoria vira "concluida" e o link para de aceitar edicao
     const faltamFotos = fotos.length === 0 ? "\n\nAtenção: nenhuma foto foi anexada." : "";
     if (!window.confirm(`Finalizar e enviar o laudo? Depois de enviado ele não pode mais ser editado.${faltamFotos}`)) return;
@@ -690,22 +832,20 @@ function Formulario({ token }) {
         const path = `${vist.id}/${Date.now()}_${i}.${ext}`;
         const url = await api.uploadFoto(f.file, path);
         fotoRows.push({
-          vistoria_id: vist.id, legenda: f.legenda || `Foto ${i + 1}`, url, ordem: i,
+          legenda: f.legenda || `Foto ${i + 1}`, url, ordem: i,
           nivel: tipo.porFoto ? f.nivel : null,
           densidade: tipo.porFoto ? f.nivel * 20 : null,
         });
         i++;
       }
-      if (fotoRows.length) await api.insert("vistoria_fotos", fotoRows);
 
       // 2. itens do checklist
       const itemRows = [];
       let ord = 0;
       Object.entries(itens).forEach(([k, v]) => {
         const [secao, item] = k.split("||");
-        itemRows.push({ vistoria_id: vist.id, secao, item, resultado: v, ordem: ord++ });
+        itemRows.push({ secao, item, resultado: v, ordem: ord++ });
       });
-      if (itemRows.length) await api.insert("vistoria_itens", itemRows);
 
       // 3. separa colunas proprias dos campos que vao em dados_extra
       const colunas = {}, extra = {};
@@ -713,27 +853,23 @@ function Formulario({ token }) {
         const val = dados[c.k] ?? "";
         if (c.extra) extra[c.k] = val; else colunas[c.k] = val;
       });
-      if (colunas.placa != null) colunas.placa = String(colunas.placa).toUpperCase();
+      colunas.vistoriador = dados.vistoriador || vist.vistoriador || "";
+      colunas.observacoes = dados.observacoes || "";
 
-      // 4. parecer automatico conforme o tipo
-      let parecer;
       if (tipo.porFoto) {
         const r = resumoRingelmann(fotoRows);
-        const limite = Number(dados.limite) || LIMITE_RINGELMANN_PADRAO;
-        parecer = r.n && r.maior > limite ? "REPROVADO" : "APROVADO";
         extra.densidade_media = r.media;
         extra.nivel_maximo = r.maior;
-      } else {
-        parecer = Object.values(itens).some(reprova) ? "NAO CONFORME" : "CONFORME";
+        if (!extra.limite) extra.limite = String(LIMITE_RINGELMANN_PADRAO);
       }
 
-      await api.update("vistorias", `id=eq.${vist.id}`, {
-        ...colunas,
-        dados_extra: extra,
-        vistoriador: dados.vistoriador || vist.vistoriador,
-        observacoes: dados.observacoes || null,
-        status: "concluida", parecer,
-        concluido_em: new Date().toISOString(),
+      // 4. grava tudo numa chamada; o parecer e recalculado no servidor
+      await api.rpc("enviar_vistoria", {
+        p_token: token,
+        p_dados: colunas,
+        p_extra: extra,
+        p_itens: itemRows,
+        p_fotos: fotoRows,
       });
       setEnviado(true);
     } catch (e) { alert("Erro ao enviar: " + e.message); }
@@ -919,11 +1055,12 @@ function Laudo({ id }) {
   useEffect(() => {
     (async () => {
       try {
-        const [vd] = await api.select("vistorias", `id=eq.${id}&select=*`);
-        if (!vd) { setErro("Laudo não encontrado."); return; }
-        setV(vd);
-        setItens(await api.select("vistoria_itens", `vistoria_id=eq.${id}&select=*&order=ordem.asc`));
-        setFotos(await api.select("vistoria_fotos", `vistoria_id=eq.${id}&select=*&order=ordem.asc`));
+        // leitura publica por id: o QR de validacao precisa abrir sem login
+        const d = await api.rpc("laudo_por_id", { p_id: id });
+        if (!d || !d.vistoria) { setErro("Laudo não encontrado ou ainda não concluído."); return; }
+        setV(d.vistoria);
+        setItens(d.itens || []);
+        setFotos(d.fotos || []);
       } catch (e) { setErro("Erro: " + e.message); }
     })();
   }, [id]);
@@ -1187,6 +1324,7 @@ const btnGhost = { padding: "10px 14px", borderRadius: 10, border: `1px solid ${
 /* =====================  ROTEADOR  ===================== */
 export default function App() {
   const [hash, setHash] = useState(window.location.hash || "#/");
+  const [logado, setLogado] = useState(!!auth.atual);
   useEffect(() => {
     const on = () => setHash(window.location.hash || "#/");
     window.addEventListener("hashchange", on);
@@ -1200,7 +1338,8 @@ export default function App() {
   // o estado da vistoria anterior (respostas, passo e a tela de "ja enviada")
   if (mV) view = <Formulario key={mV[1]} token={decodeURIComponent(mV[1])} />;
   else if (mL) view = <Laudo key={mL[1]} id={mL[1]} />;
-  else view = <Painel />;
+  else if (logado) view = <Painel aoSair={() => setLogado(false)} />;
+  else view = <Login aoEntrar={() => setLogado(true)} />;
 
   const isLaudo = !!mL;
   return (
