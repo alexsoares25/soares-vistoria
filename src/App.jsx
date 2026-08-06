@@ -1,6 +1,350 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 
 /* ============================================================
+   TIPOS DE LAUDO — checklists, campos e termos de cada tipo
+   ============================================================ */
+
+const SSMA_SECOES = [
+  {
+    "nome": "1. Geral (Todos Veículos)",
+    "escala": "conforme",
+    "itens": [
+      "1.01 A documentação do veículo (CRLV) na validade e disponível ?",
+      "1.02 Possui sistema de monitoramento de localização e velocidade (telemetria), instalado e em funcionamento? Não aplicável para veículos de aluguel de balcão.",
+      "1.03 O motor do veículo e de partida apresentam bom funcionamento?",
+      "1.04 Possui assento fixado, regulável e em boas condições?",
+      "1.05 Sistema de direção está em boas condições de funcionamento?",
+      "1.06 Buzina, volante, embreagem, freios, acelerador e dispositivos de comando estão funcionando?",
+      "1.07 Pneus em boas condições (twi - tyre work indication / sulcos > 3 mm profundidade)?",
+      "1.08 O veículo possui logotipo da empresa fixado nas laterais?",
+      "1.09 Freios de estacionamento em boas condições?",
+      "1.10 Limpador e esguicho de água para pára-brisa estão funcionando?",
+      "1.11 O estado dos vidros pára-brisas, laterais e traseiros e espelhos retrovisores (interno e externo) proporcionam condição de visibilidade e livres de danos?",
+      "1.12 Possui alarme sonoro de ré? Não aplicável para veículos de aluguel de balcão.",
+      "1.13 As partes rotativas estão totalmente protegidas?",
+      "1.14 Possui maçaneta com trancas/pinos nas portas? Exceto para Ônibus e Microonibus.",
+      "1.15 Possui placas (dianteira e traseira) fixadas e com lacre (placa traseira)?",
+      "1.15 Possui dispositivos para sinalização (triângulo refletivos, cones)?",
+      "1.16 Possui chave de roda, pneu estepe e macaco?",
+      "1.17 Todos os sinais luminosos (setas dianteiras e traseiras, luz de freio, luz de marcha à ré, pisca alerta, lanterna traseira e faróis alto e baixo) estão funcionando?",
+      "1.18 As condições da lataria são boas?",
+      "1.19 Está livre de vazamento de óleo/combustível?",
+      "1.20 Luzes indicadoras de painel estão funcionando?",
+      "1.21 Encosto de cabeça (ou banco biposto) para todos ocupantes estão disponíveis e em bom estado de conservação?",
+      "1.22 Possui iluminação interna e luz de embarque?",
+      "1.23 Foi realizado avaliação de emissão de fumaça (padrão RINGELMANN Superfície e Opacímetro subsolo)? Aplicável somente para veículos movidos a diesel.",
+      "1.24 O setor e barra de direção estão sem folgas?",
+      "1.25 As ponteiras e coifas de proteção dos terminais estão sem avarias?",
+      "1.26 A bomba de direção está sem vazamento?",
+      "1.27 Os mangotes hidráulicos apresentam boas condições e estão sem oxidações nas conexões ou umidade de óleo?",
+      "1.28 As mangas de eixo e os brincos de mola estão sem folga e livre de trincas?",
+      "1.29 A coluna de direção está sem folga no suporte?",
+      "1.30 Óleo do reservatório está no nível?",
+      "1.31 As cuícas de freio estão sem folgas ou oxidação?",
+      "1.32 As lonas, discos e pastilhas de freio estão sem avaria ou desgaste excessivo?",
+      "1.33 As catracas de freio estão sem avaria e folga no pino?",
+      "1.34 O sistema apresenta lubrificação eficaz?",
+      "1.35 O veículo está sem vazamentos pneumáticos com o pedal de freio acionado?",
+      "1.36 O fluido de freios está entre os níveis indicados?",
+      "1.37 Os vasos de pressão estão sem avaria, oxidação ou com vazamento de ar?",
+      "1.38 O revestimento da sapata do conjunto de pedais está sem desgaste excessivo?",
+      "1.39 Borda de assentamento do aro na roda está livre de avaria e não apresenta afastamento do aro na roda dianteira?",
+      "1.40 Fixação de rodas está sem folga e com todas as porcas? Dips de indicação de aperto.",
+      "1.41 Estepe apresenta boas condições e está bem fixado no suporte?",
+      "1.42 Sistema de fechamento e escoramento das portas, tampas, porta malas e capô estão em bom estado e funcionando corretamente? Nota: Possui trava de segurança de forma a evitar prensamento de membros.",
+      "1.43 As partes móveis rotativas, articuladas, quentes, estão devidamente protegidas? Nota: Partes rotativas como cardan, helice, escapamentos, correias, articulações de equipamentos, patolas de equipamentos, onde ofereça o risco de contato durante operações.",
+      "1.44 A fixação do conjunto de pedais está sem desgaste ou avaria?",
+      "1.45 Retrovisor apresenta boas condições na fixação e sem desgaste ou quebra do cristal?",
+      "1.46 Veículo está sem avaria e desgaste nas faixas refletivas laterais e traseira? Aplicável para veículos que acessam áreas internas (operacional ou administrativa) e área de lavra. Não aplicável para veículos de aluguel de balcão.",
+      "1.47 Possui sistema de comunicação entre veículos e equipamentos? Aplicável para veículos que acessam áreas internas (operacional ou administrativa) e área de lavra. Não aplicável para veículos de aluguel de balcão.",
+      "1.48 O rolamento central está sem folga?",
+      "1.49 O flange da caixa de câmbio está em bom estado?",
+      "1.50 A cruzeta está sem avaria?",
+      "1.51 A embreagem está sem desgaste ou defeitos?",
+      "1.52 Mancal eixo de transmissão está sem folgas ou avaria?",
+      "1.53 Os parafusos dos flanges de transmissão estão sem folgas?",
+      "1.54 Os grampos \"u\" dos feixes de mola estão folgas ou danificados?",
+      "1.55 Os pinos estão com lubrificação eficaz?",
+      "1.56 Os cubos de rodas e diferencial estão sem presença de vazamento de óleo?",
+      "1.57 A caixa de marcha está sem presença de vazamento de óleo?",
+      "1.58 Calço da caixa de marchas está sem avaria?",
+      "1.59 A árvore de transmissão (cardan) está sem folga?",
+      "1.60 O painel do veículo está livre de falhas?",
+      "1.61 O acionamento dos vidros está funcionando normalmente?",
+      "1.62 O funcionamento do motor está normal? (ruído, falha)",
+      "1.63 O sistema de arrefecimento do motor está sem avaria? (nível de água, estado das mangueiras e suas fixações)",
+      "1.64 O sistema de escapamento do motor está sem avaria? (avarias, oxidação excessiva, fixação irregular)",
+      "1.65 Janelas (vidros - laterais e traseiro) estão em boas condições?",
+      "1.66 O para-brisa está em boas condições (livre de trincas)?",
+      "1.67 Motor do veículo, de partida e compressor de ar estão em perfeito estado de funcionamento?",
+      "1.68 Freio de serviço e de estacionamento estão funcionando?",
+      "1.69 Possui alerta sonoro de ré ruído branco acoplado ao sistema de acionamento de marcha-a-ré, em condição adequada de funcionamento? Não aplicável para veículos de aluguel de balcão.",
+      "1.70 Possui sensor de ré ou câmera de ré? Não aplicável para veículos de aluguel de balcão.",
+      "1.71 Possui sistema de detecção de sonolência do condutor? Não aplicável para veículos de aluguel de balcão.",
+      "1.72 Possui dois coletes refletivos, um par de luvas?",
+      "1.73 Todas as rodas estão isentas de quebras, trincas, deformações, vazamentos ou consertos, em qualquer dos eixos do veículo?",
+      "1.74 Possui ar condicionado?",
+      "1.75 Possui tacógrafo com certificado de aferição válido?",
+      "1.76 Para-choques (dianteiros e traseiros) em bom estado? (Parachoque de impulsão aplicável para Caminhonetes que acessam a mina subterrânea )",
+      "1.77 Maçaneta das portas (trincos externos e internos)?",
+      "1.78 As modificações foram executadas mediante aprovação formal do fabricante?",
+      "1.79 O veículo está recebendo as manutenções preventivas recomendadas pelo fabricante?",
+      "1.80 Possuir 02 calços para as rodas?",
+      "1.81 Possui sinalizadores de torque de parafusos das rodas?",
+      "1.82 Extintor de incêndio classe \"ABC\" proporcional ao veículo, na validade e carregado?"
+    ]
+  },
+  {
+    "nome": "2. Veículos dedicados",
+    "escala": "conforme",
+    "itens": [
+      "2.01 Possui cinto de segurança do tipo três pontos para todos os ocupantes do veículo e apresenta boas condições?",
+      "2.02 Possui air bag frontal para motorista e passageiro do banco dianteiro? Aplicável somente para veículos leves, caminhonete e vans",
+      "2.03 Possui sistema de freios ABS nas quatro rodas?",
+      "2.04 Possui controle eletrônico de frenagem (EBD)? Aplicável para veículos que acessam área de lavra.",
+      "2.05 Possui controle de estabilidade? Aplicável para veículos que acessam área de lavra.",
+      "2.06 Possui Tração 4x4? Aplicável para veículos que acessam área de lavra.",
+      "2.07 Possui controle de tração? Aplicável para veículos que acessam área de lavra.",
+      "2.08 Possui uma bandeirola visível e refletiva, definida conforme altura do maior equipamento? Aplicável para veículos que acessam áreas operacionais (Planta metalúrgica, opem pit, PDR's e barragens).",
+      "2.09 Possui luz intermitente (Giroflex/Giroled), giratória? Aplicável para veículos que acessam área operacionais (Planta metalúrgica, opem pit, PDR's, barragens e mina subterrânea)."
+    ]
+  },
+  {
+    "nome": "3. Veículos de aluguel de balcão",
+    "escala": "conforme",
+    "itens": [
+      "3.01 Possui cinto de segurança do tipo três pontos para todos os ocupantes do veículo e apresenta boas condições?",
+      "3.02 Possui air bag frontal para motorista e passageiro do banco dianteiro?",
+      "3.03 Possui sistema de freios ABS nas quatro rodas?"
+    ]
+  },
+  {
+    "nome": "4. Ônibus e Micro-ônibus",
+    "escala": "conforme",
+    "itens": [
+      "4.01 Possui sistema de saída de emergência com mecanismo de abertura de manuseio simples?",
+      "4.02 Possui tacógrafo em funcionamento?",
+      "4.03 Possui sistema auxiliar de freio primário retardador de velocidade (freio motor)?",
+      "4.04 Possui caixa de marcha do tipo sincronizado?",
+      "4.05 Possui cinto de segurança do tipo três (03) pontos para o condutor e dois (02) pontos para os demais passageiros? (micro-ônibus e ônibus)",
+      "4.06 Possui sistema retardador de velocidade do tipo primário (freio motor/freio de cabeçote) para ônibus?",
+      "4.07 Possui sistema auxiliar de freio secundário (retarder hidráulico ou eletromagnético)? Aplicável para ônibus que acessam áreas internas (operacional ou administrativa) e via pública.",
+      "4.08 Possui sistema primário retardador de velocidade (freio motor)?",
+      "4.09 Possui alvará de licença para transporte coletivo municipal?",
+      "4.10 Os pneus utilizados no eixo dianteiro estão isentos de reformas, quer seja pelo processo de recapagem, recauchutagem ou remoldagem.",
+      "4.11 Possui sinalizadores de torque de parafusos das rodas? (ônibus e micro-ônibus)",
+      "4.12 Possui botoeira de emergência na porta de serviço conforme resolução CONTRAN (455)?",
+      "4.13 Possui chave geral e cofre para bloqueio do veículo (ônibus e micro-ônibus)?",
+      "4.14 Cabine conservada?",
+      "4.15 Extintor de incêndio classe \"ABC\" proporcional ao veículo, na validade e carregado?",
+      "4.16 Possui Tração 4x4? Aplicável para micro-ônibus que acessam área de lavra.",
+      "4.17 Possui controle de tração? Aplicável para micro-ônibus que acessam área de lavra.",
+      "4.18 Possui uma bandeirola visível e refletiva,, definida conforme altura do maior equipamento? Aplicável para micro-ônibus que acessam área de lavra.",
+      "4.19 Possui luz intermitente, giratória ou estroboscópica? Aplicável para micro-ônibus que acessam área de lavra.",
+      "4.20 Possui Sensor de alerta de proximidade com equipamentos pesados? Aplicável para micro-ônibus que acessam área de lavra.",
+      "4.21 Possuir botoeira de emergência próximo ao motorista para desligamento do motor em caso de panes."
+    ]
+  },
+  {
+    "nome": "3. Caminhonete",
+    "escala": "conforme",
+    "itens": [
+      "3.01 Possui grade de proteção do vidro traseiro (isolamento de carga para caminhonetes) com no mínimo duas hastes?"
+    ]
+  },
+  {
+    "nome": "5. Vans",
+    "escala": "conforme",
+    "itens": [
+      "5.02 Os pneus utilizados nos eixos dianteiro e traseiro estão isentos de reformas, quer seja pelo processo de recapagem, recauchutagem ou remoldagem (vans).",
+      "5.03 Possui trava nas porcas das rodas?",
+      "5.04 Possui cinto de segurança do tipo três (03) pontos para primeira linha de bancos e dois (02) pontos para os demais passageiros?",
+      "5.05 Possui alvará de licença para transporte coletivo municipal?",
+      "5.06 Extintor de incêndio classe \"ABC\" proporcional ao veículo, na validade e carregado?",
+      "5.07 Possui air bag frontal para motorista e passageiro do banco dianteiro? Aplicável somente para veículos leves, caminhonete e vans.",
+      "5.08 Possui sistema de freios ABS nas quatro rodas?"
+    ]
+  }
+];
+
+
+/* Escalas de resposta. `reprova` define o que derruba o parecer final. */
+const ESCALAS = {
+  estado: { opcoes: ["OK", "NAO APLICAVEL", "NAO CONFORME"], padrao: "OK", reprova: ["NAO CONFORME"] },
+  original: { opcoes: ["ORIGINAL", "NAO APLICAVEL", "REMARCADO"], padrao: "ORIGINAL", reprova: ["REMARCADO"] },
+  conforme: { opcoes: ["SIM", "N/A", "NAO"], padrao: "SIM", reprova: ["NAO"] },
+};
+
+const reprova = (resultado) =>
+  Object.values(ESCALAS).some((e) => e.reprova.includes(resultado));
+
+/* Campos com `extra: true` são gravados em vistorias.dados_extra (jsonb). */
+const CAMPOS_VEICULO = [
+  { k: "placa", label: "Placa" },
+  { k: "fabricante", label: "Marca" },
+  { k: "modelo", label: "Modelo" },
+  { k: "cor", label: "Cor" },
+  { k: "ano_fab", label: "Ano fab." },
+  { k: "ano_mod", label: "Ano mod." },
+  { k: "combustivel", label: "Combustível" },
+  { k: "km", label: "KM / Hodômetro" },
+  { k: "uf", label: "UF" },
+  { k: "motor", label: "Motor (nº)" },
+];
+
+const TIPOS = {
+  cautelar: {
+    id: "cautelar",
+    nome: "Laudo Cautelar",
+    subtitulo: "Vistoria cautelar de procedência veicular",
+    resumo: "Estrutura, pintura, vidros, identificação e etiquetas",
+    campos: [
+      ...CAMPOS_VEICULO,
+      { k: "chassi", label: "Chassi", largo: true },
+      { k: "renavam", label: "Renavam", largo: true },
+    ],
+    secoes: [
+      {
+        nome: "ESTRUTURA", escala: "estado",
+        itens: [
+          "Longarina dianteira esquerda", "Longarina dianteira direita", "Painel",
+          "Painel corta fogo", "Paralama interno esquerdo", "Paralama interno direito",
+          "Torre amortecedor diant. esquerdo", "Torre amortecedor diant. direito",
+          "Coluna dianteira direita", "Coluna central direita", "Coluna traseira direita",
+          "Caixa de ar lado direito", "Coluna dianteira esquerda", "Coluna central esquerda",
+          "Coluna traseira esquerda", "Caixa de ar lado esquerdo",
+          "Longarina traseira esquerda", "Longarina traseira direita",
+          "Painel traseiro", "Caixa estepe",
+        ],
+      },
+      {
+        nome: "PINTURA", escala: "estado",
+        itens: [
+          "Capô", "Teto", "Tampa do porta-malas", "Paralama dianteiro esquerdo",
+          "Porta dianteira esquerda", "Porta traseira esquerda", "Lateral traseira esquerda",
+          "Lateral traseira direita", "Porta traseira direita", "Porta dianteira direita",
+          "Paralama dianteiro direito", "Para-choque dianteiro", "Para-choque traseiro",
+        ],
+      },
+      {
+        nome: "VIDROS", escala: "original",
+        itens: [
+          "Para-brisa", "Porta dianteira esquerda", "Porta traseira esquerda",
+          "Porta dianteira direita", "Porta traseira direita", "Lateral traseira direita",
+          "Lateral traseira esquerda", "Vidro traseiro",
+        ],
+      },
+      {
+        nome: "IDENTIFICACAO", escala: "estado",
+        itens: [
+          "Número do motor", "Número do chassi", "Plaqueta chassi",
+          "Plaqueta carroceria", "Plaqueta chassi traseira",
+        ],
+      },
+      {
+        nome: "ETIQUETAS", escala: "original",
+        itens: ["Etiqueta compartimento do motor", "Etiqueta coluna lado direito"],
+      },
+    ],
+    fotos: [
+      "Frente 45º lado direito", "Frente 45º lado esquerdo",
+      "Traseira 45º lado direito", "Traseira 45º lado esquerdo",
+      "Compartimento do motor", "Painel de instrumento", "Hodômetro",
+      "Chassi", "Motor (numeração)", "Placa traseira",
+    ],
+    termo:
+      "O objetivo da presente vistoria é a verificação da procedência e da qualidade estrutural e estética do " +
+      "veículo, para melhor conhecimento do bem. A vistoria limita-se a indicar, no momento de sua realização, " +
+      "eventuais avarias externas e alterações estruturais visíveis, sem desmonte de peças ou manuseio mecânico. " +
+      "O perfeito funcionamento de itens mecânicos, elétricos e eletrônicos, bem como a autenticidade do " +
+      "hodômetro, não são atestados. As informações são válidas apenas para a data e o momento da vistoria. " +
+      "Este laudo não substitui perícia oficial e não garante, por si só, a aceitação por seguradoras ou " +
+      "instituições financeiras, que adotam critérios próprios.",
+  },
+
+  ssma: {
+    id: "ssma",
+    nome: "Checklist de Mobilização SSMA",
+    subtitulo: "Checklist de Mobilização de SSMA — Veículos Automotores",
+    resumo: "Conformidade de veículos para mobilização (PN 0693 / FM-0441)",
+    referencia: "Documento de referência: PN 0693 · FM-0441 Rev. 03",
+    campos: [
+      { k: "empresa", label: "Empresa", extra: true, largo: true },
+      { k: "subcontratada", label: "Subcontratada", extra: true, largo: true },
+      { k: "contrato", label: "Nº contrato", extra: true },
+      { k: "categoria", label: "Categoria", extra: true },
+      { k: "placa", label: "Placa" },
+      { k: "tag", label: "TAG", extra: true },
+      { k: "fabricante", label: "Marca" },
+      { k: "modelo", label: "Modelo" },
+      { k: "ano_fab", label: "Ano" },
+      { k: "km", label: "KM" },
+      { k: "localidade", label: "Localidade", extra: true },
+      { k: "local_inspecao", label: "Local da inspeção", extra: true },
+      { k: "descricao_equip", label: "Descrição do equipamento/veículo/máquina", extra: true, largo: true },
+    ],
+    secoes: SSMA_SECOES,
+    fotos: [
+      "Frente do veículo", "Traseira do veículo", "Lateral direita", "Lateral esquerda",
+      "Hodômetro", "Pneus", "Extintor", "Documento (CRLV)", "Compartimento do motor",
+    ],
+    legenda: "(SIM) Atende · (NAO) Não atende · (N/A) Não aplicável",
+    termo:
+      "Este checklist verifica a conformidade do veículo/equipamento frente aos requisitos de Saúde, Segurança e " +
+      "Meio Ambiente exigidos para mobilização, na data e hora indicadas. A avaliação é visual e funcional, sem " +
+      "desmonte de conjuntos ou ensaios laboratoriais, e reflete a condição do bem apenas no momento da inspeção. " +
+      "Itens marcados como Não Aplicável referem-se a requisitos que não incidem sobre a categoria do veículo " +
+      "inspecionado. A liberação para mobilização é prerrogativa do contratante, que pode adotar critérios " +
+      "complementares aos aqui verificados.",
+  },
+
+  ringelmann: {
+    id: "ringelmann",
+    nome: "Emissão de Fumaça — Ringelmann",
+    subtitulo: "Avaliação de emissão de fumaça preta pela escala de Ringelmann",
+    resumo: "Medição de densidade colorimétrica em veículos a diesel",
+    porFoto: true, // as fotos carregam o nível 1-5, não há checklist
+    campos: [
+      { k: "empresa", label: "Empresa / proprietário", extra: true, largo: true },
+      { k: "placa", label: "Placa" },
+      { k: "tag", label: "TAG", extra: true },
+      { k: "fabricante", label: "Marca" },
+      { k: "modelo", label: "Modelo" },
+      { k: "ano_fab", label: "Ano de fabricação" },
+      { k: "km", label: "Hodômetro" },
+      { k: "combustivel", label: "Combustível" },
+      { k: "condutor", label: "Condutor", extra: true },
+      { k: "local_inspecao", label: "Local da medição", extra: true, largo: true },
+      { k: "limite", label: "Limite aceito (nível Ringelmann)", extra: true },
+    ],
+    secoes: [],
+    fotos: ["Frente do veículo", "Hodômetro", "Traseira do veículo", "Escapamento"],
+    termo:
+      "A presente avaliação mede a densidade colorimétrica da fumaça emitida pelo escapamento do veículo por " +
+      "comparação visual com a escala de Ringelmann, cujos níveis de 1 a 5 correspondem a 20%, 40%, 60%, 80% e " +
+      "100% de densidade. O método é comparativo e visual, realizado em campo, e não substitui a medição por " +
+      "opacímetro nem ensaio laboratorial. O resultado reflete a condição do veículo apenas no momento e nas " +
+      "condições ambientais da medição. O limite de aceitação registrado neste laudo é o parâmetro informado " +
+      "pelo contratante para esta operação; a verificação do limite legal aplicável ao caso é de responsabilidade " +
+      "do contratante.",
+  },
+};
+
+/* Escala de Ringelmann: nível -> densidade colorimétrica de referência */
+const NIVEIS_RINGELMANN = [
+  { n: 1, pct: 20, cor: "#d9dee5" },
+  { n: 2, pct: 40, cor: "#9aa5b1" },
+  { n: 3, pct: 60, cor: "#5c6773" },
+  { n: 4, pct: 80, cor: "#2f3740" },
+  { n: 5, pct: 100, cor: "#11151a" },
+];
+
+const LIMITE_RINGELMANN_PADRAO = 2;
+
+const tipoDe = (v) => TIPOS[v?.tipo] || TIPOS.cautelar;
+
+
+/* ============================================================
    SISTEMA DE VISTORIA VEICULAR — LAUDO CAUTELAR
    Backend: Supabase (projeto VISTORIA)
    Modos (por hash na URL):
@@ -78,62 +422,25 @@ const api = {
   },
 };
 
-/* ---------- checklist padrao (modelo laudo cautelar) ---------- */
-const SECOES = {
-  ESTRUTURA: {
-    tipo: "estado",
-    itens: [
-      "Longarina dianteira esquerda", "Longarina dianteira direita", "Painel",
-      "Painel corta fogo", "Paralama interno esquerdo", "Paralama interno direito",
-      "Torre amortecedor diant. esquerdo", "Torre amortecedor diant. direito",
-      "Coluna dianteira direita", "Coluna central direita", "Coluna traseira direita",
-      "Caixa de ar lado direito", "Coluna dianteira esquerda", "Coluna central esquerda",
-      "Coluna traseira esquerda", "Caixa de ar lado esquerdo",
-      "Longarina traseira esquerda", "Longarina traseira direita",
-      "Painel traseiro", "Caixa estepe",
-    ],
-  },
-  PINTURA: {
-    tipo: "estado",
-    itens: [
-      "Capô", "Teto", "Tampa do porta-malas", "Paralama dianteiro esquerdo",
-      "Porta dianteira esquerda", "Porta traseira esquerda", "Lateral traseira esquerda",
-      "Lateral traseira direita", "Porta traseira direita", "Porta dianteira direita",
-      "Paralama dianteiro direito", "Para-choque dianteiro", "Para-choque traseiro",
-    ],
-  },
-  VIDROS: {
-    tipo: "original",
-    itens: [
-      "Para-brisa", "Porta dianteira esquerda", "Porta traseira esquerda",
-      "Porta dianteira direita", "Porta traseira direita", "Lateral traseira direita",
-      "Lateral traseira esquerda", "Vidro traseiro",
-    ],
-  },
-  IDENTIFICACAO: {
-    tipo: "estado",
-    itens: [
-      "Número do motor", "Número do chassi", "Plaqueta chassi",
-      "Plaqueta carroceria", "Plaqueta chassi traseira",
-    ],
-  },
-  ETIQUETAS: {
-    tipo: "original",
-    itens: ["Etiqueta compartimento do motor", "Etiqueta coluna lado direito"],
-  },
-};
+/* checklists e campos de cada tipo de laudo vivem em ./tipos.js */
 
-const OPCOES = {
-  estado: ["OK", "NAO APLICAVEL", "NAO CONFORME"],
-  original: ["ORIGINAL", "NAO APLICAVEL", "REMARCADO"],
-};
-
-const FOTOS_SUGERIDAS = [
-  "Frente 45º lado direito", "Frente 45º lado esquerdo",
-  "Traseira 45º lado direito", "Traseira 45º lado esquerdo",
-  "Compartimento do motor", "Painel de instrumento", "Hodômetro",
-  "Chassi", "Motor (numeração)", "Placa traseira",
-];
+/* densidade media e nivel maximo de um conjunto de fotos Ringelmann */
+function resumoRingelmann(fotos) {
+  const comNivel = fotos.filter((f) => f.nivel);
+  if (!comNivel.length) return { media: 0, maior: 0, porNivel: {}, n: 0 };
+  const porNivel = {};
+  let soma = 0;
+  comNivel.forEach((f) => {
+    porNivel[f.nivel] = (porNivel[f.nivel] || 0) + 1;
+    soma += f.densidade != null ? Number(f.densidade) : f.nivel * 20;
+  });
+  return {
+    media: Math.round(soma / comNivel.length),
+    maior: Math.max(...comNivel.map((f) => f.nivel)),
+    porNivel,
+    n: comNivel.length,
+  };
+}
 
 /* =====================  UI base  ===================== */
 const C = {
@@ -173,7 +480,7 @@ function Painel() {
   const [vistorias, setVistorias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [novo, setNovo] = useState(false);
-  const [form, setForm] = useState({ placa: "", modelo: "", cliente: "", vistoriador: "" });
+  const [form, setForm] = useState({ tipo: "cautelar", placa: "", modelo: "", cliente: "", vistoriador: "" });
   const [criando, setCriando] = useState(false);
   const [linkGerado, setLinkGerado] = useState(null);
 
@@ -191,6 +498,7 @@ function Painel() {
     setCriando(true);
     try {
       const resp = await api.insert("vistorias", [{
+        tipo: form.tipo,
         placa: (form.placa || "").toUpperCase(), modelo: form.modelo,
         cliente: form.cliente, vistoriador: form.vistoriador,
         solicitante: "Alex Soares", status: "pendente",
@@ -199,7 +507,7 @@ function Painel() {
       if (!v || !v.token) throw new Error("Resposta sem token do servidor.");
       const link = `${location.origin}${location.pathname}#/v/${encodeURIComponent(v.token)}`;
       setLinkGerado({ link, placa: v.placa });
-      setForm({ placa: "", modelo: "", cliente: "", vistoriador: "" });
+      setForm({ tipo: form.tipo, placa: "", modelo: "", cliente: "", vistoriador: "" });
       setNovo(false);
       window.scrollTo(0, 0);
       load();
@@ -247,6 +555,25 @@ function Painel() {
       {novo && (
         <div style={{ ...card, marginBottom: 20 }}>
           <div style={{ fontWeight: 700, marginBottom: 14 }}>Nova vistoria</div>
+
+          <div style={{ fontSize: 12, color: C.sub, marginBottom: 7, letterSpacing: .3 }}>Tipo de laudo</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+            {Object.values(TIPOS).map(t => {
+              const ativo = form.tipo === t.id;
+              return (
+                <button key={t.id} onClick={() => setForm({ ...form, tipo: t.id })}
+                  style={{
+                    textAlign: "left", padding: "11px 13px", borderRadius: 10, cursor: "pointer",
+                    border: `1.5px solid ${ativo ? C.brand : C.line}`,
+                    background: ativo ? "rgba(45,212,191,.09)" : "transparent",
+                  }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: ativo ? C.brand : C.ink }}>{t.nome}</div>
+                  <div style={{ fontSize: 11.5, color: C.sub, marginTop: 2 }}>{t.resumo}</div>
+                </button>
+              );
+            })}
+          </div>
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Placa" value={form.placa} onChange={e => setForm({ ...form, placa: e.target.value })} placeholder="ABC1D23" />
             <Field label="Modelo" value={form.modelo} onChange={e => setForm({ ...form, modelo: e.target.value })} placeholder="Citroën C4 Cactus" />
@@ -275,6 +602,7 @@ function Painel() {
                 <div style={{ fontSize: 12, color: C.sub, marginTop: 3 }}>
                   {v.cliente || "—"} · {new Date(v.criado_em).toLocaleDateString("pt-BR")}
                 </div>
+                <div style={{ fontSize: 11, color: C.brand, marginTop: 4, fontWeight: 600 }}>{tipoDe(v).nome}</div>
               </div>
               <span style={{
                 fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 20,
@@ -316,35 +644,42 @@ function Formulario({ token }) {
         if (!d.length) { setErro("Vistoria não encontrada. Verifique o link."); return; }
         if (d[0].status === "concluida") { setErro("Esta vistoria já foi concluída."); return; }
         setVist(d[0]);
-        setDados({
-          placa: d[0].placa || "", chassi: d[0].chassi || "", renavam: d[0].renavam || "",
-          fabricante: d[0].fabricante || "", modelo: d[0].modelo || "", cor: d[0].cor || "",
-          ano_fab: d[0].ano_fab || "", ano_mod: d[0].ano_mod || "", combustivel: d[0].combustivel || "",
-          km: d[0].km || "", motor: d[0].motor || "", uf: d[0].uf || "",
-          vistoriador: d[0].vistoriador || "", observacoes: "",
+        const t = tipoDe(d[0]);
+        const extra = d[0].dados_extra || {};
+        const init0 = { vistoriador: d[0].vistoriador || "", observacoes: "" };
+        t.campos.forEach(c => {
+          init0[c.k] = (c.extra ? extra[c.k] : d[0][c.k]) || "";
         });
+        if (t.porFoto && !init0.limite) init0.limite = String(LIMITE_RINGELMANN_PADRAO);
+        setDados(init0);
+
         const init = {};
-        Object.entries(SECOES).forEach(([sec, cfg]) => {
-          cfg.itens.forEach(it => {
-            init[`${sec}||${it}`] = cfg.tipo === "original" ? "ORIGINAL" : "OK";
-          });
+        t.secoes.forEach(sec => {
+          sec.itens.forEach(it => { init[`${sec.nome}||${it}`] = ESCALAS[sec.escala].padrao; });
         });
         setItens(init);
       } catch (e) { setErro("Erro ao carregar: " + e.message); }
     })();
   }, [token]);
 
-  const secKeys = Object.keys(SECOES);
-  const totalPassos = 1 + secKeys.length + 1; // dados + secoes + fotos
+  const tipo = tipoDe(vist);
+  const secoes = tipo.secoes;
+  const totalPassos = 1 + secoes.length + 1; // dados + secoes + fotos
 
   async function addFotos(files) {
     for (const f of files) {
       const id = Math.random().toString(36).slice(2);
-      setFotos(prev => [...prev, { id, file: f, legenda: "", preview: URL.createObjectURL(f) }]);
+      setFotos(prev => [...prev, {
+        id, file: f, legenda: "", preview: URL.createObjectURL(f),
+        nivel: tipo.porFoto ? 1 : null,
+      }]);
     }
   }
 
   async function enviar() {
+    // envio e irreversivel: a vistoria vira "concluida" e o link para de aceitar edicao
+    const faltamFotos = fotos.length === 0 ? "\n\nAtenção: nenhuma foto foi anexada." : "";
+    if (!window.confirm(`Finalizar e enviar o laudo? Depois de enviado ele não pode mais ser editado.${faltamFotos}`)) return;
     setEnviando(true);
     try {
       // 1. upload das fotos
@@ -354,25 +689,50 @@ function Formulario({ token }) {
         const ext = (f.file.name.split(".").pop() || "jpg").toLowerCase();
         const path = `${vist.id}/${Date.now()}_${i}.${ext}`;
         const url = await api.uploadFoto(f.file, path);
-        fotoRows.push({ vistoria_id: vist.id, legenda: f.legenda || `Foto ${i + 1}`, url, ordem: i });
+        fotoRows.push({
+          vistoria_id: vist.id, legenda: f.legenda || `Foto ${i + 1}`, url, ordem: i,
+          nivel: tipo.porFoto ? f.nivel : null,
+          densidade: tipo.porFoto ? f.nivel * 20 : null,
+        });
         i++;
       }
       if (fotoRows.length) await api.insert("vistoria_fotos", fotoRows);
 
-      // 2. itens
+      // 2. itens do checklist
       const itemRows = [];
       let ord = 0;
       Object.entries(itens).forEach(([k, v]) => {
         const [secao, item] = k.split("||");
         itemRows.push({ vistoria_id: vist.id, secao, item, resultado: v, ordem: ord++ });
       });
-      await api.insert("vistoria_itens", itemRows);
+      if (itemRows.length) await api.insert("vistoria_itens", itemRows);
 
-      // 3. parecer automatico
-      const temNaoConforme = Object.values(itens).some(v => v === "NAO CONFORME" || v === "REMARCADO");
+      // 3. separa colunas proprias dos campos que vao em dados_extra
+      const colunas = {}, extra = {};
+      tipo.campos.forEach(c => {
+        const val = dados[c.k] ?? "";
+        if (c.extra) extra[c.k] = val; else colunas[c.k] = val;
+      });
+      if (colunas.placa != null) colunas.placa = String(colunas.placa).toUpperCase();
+
+      // 4. parecer automatico conforme o tipo
+      let parecer;
+      if (tipo.porFoto) {
+        const r = resumoRingelmann(fotoRows);
+        const limite = Number(dados.limite) || LIMITE_RINGELMANN_PADRAO;
+        parecer = r.n && r.maior > limite ? "REPROVADO" : "APROVADO";
+        extra.densidade_media = r.media;
+        extra.nivel_maximo = r.maior;
+      } else {
+        parecer = Object.values(itens).some(reprova) ? "NAO CONFORME" : "CONFORME";
+      }
+
       await api.update("vistorias", `id=eq.${vist.id}`, {
-        ...dados, placa: (dados.placa || "").toUpperCase(),
-        status: "concluida", parecer: temNaoConforme ? "NAO CONFORME" : "CONFORME",
+        ...colunas,
+        dados_extra: extra,
+        vistoriador: dados.vistoriador || vist.vistoriador,
+        observacoes: dados.observacoes || null,
+        status: "concluida", parecer,
         concluido_em: new Date().toISOString(),
       });
       setEnviado(true);
@@ -388,49 +748,68 @@ function Formulario({ token }) {
 
   return (
     <div style={{ maxWidth: 560, margin: "0 auto", padding: "16px 14px 100px" }}>
-      <div style={{ fontSize: 12, letterSpacing: 2, color: C.brand, fontWeight: 700 }}>VISTORIA VEICULAR</div>
+      <div style={{ fontSize: 12, letterSpacing: 2, color: C.brand, fontWeight: 700 }}>{tipo.nome.toUpperCase()}</div>
       <div style={{ height: 6, background: C.chip, borderRadius: 20, margin: "10px 0 18px", overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${pct}%`, background: C.brand, transition: "width .3s" }} />
       </div>
 
       {passo === 0 && (
         <div style={card}>
-          <h2 style={h2}>Dados do veículo</h2>
+          <h2 style={h2}>{tipo.porFoto ? "Dados da medição" : "Dados do veículo"}</h2>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <Field label="Placa" value={dados.placa} onChange={e => setDados({ ...dados, placa: e.target.value })} />
-            <Field label="Cor" value={dados.cor} onChange={e => setDados({ ...dados, cor: e.target.value })} />
-            <Field label="Fabricante" value={dados.fabricante} onChange={e => setDados({ ...dados, fabricante: e.target.value })} />
-            <Field label="Modelo" value={dados.modelo} onChange={e => setDados({ ...dados, modelo: e.target.value })} />
-            <Field label="Ano fab." value={dados.ano_fab} onChange={e => setDados({ ...dados, ano_fab: e.target.value })} />
-            <Field label="Ano mod." value={dados.ano_mod} onChange={e => setDados({ ...dados, ano_mod: e.target.value })} />
-            <Field label="Combustível" value={dados.combustivel} onChange={e => setDados({ ...dados, combustivel: e.target.value })} />
-            <Field label="KM" value={dados.km} onChange={e => setDados({ ...dados, km: e.target.value })} />
-            <Field label="UF" value={dados.uf} onChange={e => setDados({ ...dados, uf: e.target.value })} />
-            <Field label="Motor (nº)" value={dados.motor} onChange={e => setDados({ ...dados, motor: e.target.value })} />
+            {tipo.campos.map(c => (
+              <div key={c.k} style={c.largo ? { gridColumn: "1 / -1" } : undefined}>
+                <Field label={c.label} value={dados[c.k] || ""}
+                  onChange={e => setDados({ ...dados, [c.k]: e.target.value })} />
+              </div>
+            ))}
+            <div style={{ gridColumn: "1 / -1" }}>
+              <Field label="Vistoriador" value={dados.vistoriador || ""}
+                onChange={e => setDados({ ...dados, vistoriador: e.target.value })} />
+            </div>
           </div>
-          <Field label="Chassi" value={dados.chassi} onChange={e => setDados({ ...dados, chassi: e.target.value })} />
-          <Field label="Renavam" value={dados.renavam} onChange={e => setDados({ ...dados, renavam: e.target.value })} />
+          {tipo.referencia && (
+            <div style={{ fontSize: 11, color: C.sub, marginTop: 2 }}>{tipo.referencia}</div>
+          )}
         </div>
       )}
 
-      {passo >= 1 && passo <= secKeys.length && (() => {
-        const sec = secKeys[passo - 1];
-        const cfg = SECOES[sec];
-        const ops = OPCOES[cfg.tipo];
+      {passo >= 1 && passo <= secoes.length && (() => {
+        const sec = secoes[passo - 1];
+        const esc = ESCALAS[sec.escala];
+        const marcarTodos = (op) => {
+          const novo = { ...itens };
+          sec.itens.forEach(it => { novo[`${sec.nome}||${it}`] = op; });
+          setItens(novo);
+        };
         return (
           <div style={card}>
-            <h2 style={h2}>{sec}</h2>
-            <div style={{ fontSize: 12, color: C.sub, marginBottom: 14 }}>Toque para marcar cada item.</div>
-            {cfg.itens.map(it => {
-              const k = `${sec}||${it}`;
+            <h2 style={{ ...h2, fontSize: 17, lineHeight: 1.3 }}>{sec.nome}</h2>
+            <div style={{ fontSize: 12, color: C.sub, marginBottom: 10 }}>
+              {tipo.legenda || "Toque para marcar cada item."}
+            </div>
+            {sec.itens.length > 8 && (
+              <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+                <span style={{ fontSize: 11, color: C.sub, alignSelf: "center" }}>Marcar todos:</span>
+                {esc.opcoes.map(op => (
+                  <button key={op} onClick={() => marcarTodos(op)}
+                    style={{
+                      padding: "4px 9px", borderRadius: 6, fontSize: 10.5, fontWeight: 700, cursor: "pointer",
+                      border: `1px solid ${C.line}`, background: "transparent", color: C.sub,
+                    }}>{op}</button>
+                ))}
+              </div>
+            )}
+            {sec.itens.map(it => {
+              const k = `${sec.nome}||${it}`;
               return (
                 <div key={k} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: `1px solid ${C.line}` }}>
-                  <div style={{ fontSize: 14, marginBottom: 7 }}>{it}</div>
+                  <div style={{ fontSize: 13.5, marginBottom: 7, lineHeight: 1.4 }}>{it}</div>
                   <div style={{ display: "flex", gap: 6 }}>
-                    {ops.map(op => {
+                    {esc.opcoes.map(op => {
                       const active = itens[k] === op;
-                      const col = op.startsWith("NAO CONF") || op === "REMARCADO" ? C.bad
-                        : op === "NAO APLICAVEL" ? C.sub : C.ok;
+                      const col = esc.reprova.includes(op) ? C.bad
+                        : (op === "NAO APLICAVEL" || op === "N/A") ? C.sub : C.ok;
                       return (
                         <button key={op} onClick={() => setItens({ ...itens, [k]: op })}
                           style={{
@@ -449,32 +828,59 @@ function Formulario({ token }) {
         );
       })()}
 
-      {passo === secKeys.length + 1 && (
+      {passo === secoes.length + 1 && (
         <div style={card}>
           <h2 style={h2}>Fotos</h2>
           <div style={{ fontSize: 12, color: C.sub, marginBottom: 12 }}>
-            Tire ou selecione as fotos do veículo. Sugestões: {FOTOS_SUGERIDAS.slice(0, 6).join(", ")}…
+            {tipo.porFoto
+              ? "Fotografe a fumaça do escapamento e marque o nível da escala Ringelmann em cada foto."
+              : `Tire ou selecione as fotos. Sugestões: ${tipo.fotos.slice(0, 5).join(", ")}…`}
           </div>
+
+          {tipo.porFoto && (
+            <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
+              {NIVEIS_RINGELMANN.map(n => (
+                <div key={n.n} style={{ flex: 1, textAlign: "center" }}>
+                  <div style={{ height: 26, background: n.cor, borderRadius: 5, border: `1px solid ${C.line}` }} />
+                  <div style={{ fontSize: 9.5, color: C.sub, marginTop: 3 }}>{n.n} · {n.pct}%</div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <input ref={fileRef} type="file" accept="image/*" capture="environment" multiple
             style={{ display: "none" }} onChange={e => { addFotos([...e.target.files]); e.target.value = ""; }} />
           <button style={{ ...btnPrimary, width: "100%", marginBottom: 14 }} onClick={() => fileRef.current?.click()}>
             📷 Adicionar fotos
           </button>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            {fotos.map((f, idx) => (
+            {fotos.map(f => (
               <div key={f.id} style={{ background: C.bg, borderRadius: 10, overflow: "hidden", border: `1px solid ${C.line}` }}>
                 <img src={f.preview} alt="" style={{ width: "100%", height: 110, objectFit: "cover", display: "block" }} />
                 <div style={{ padding: 7 }}>
                   <input list="fotolist" placeholder="Legenda" value={f.legenda}
                     onChange={e => setFotos(fotos.map(x => x.id === f.id ? { ...x, legenda: e.target.value } : x))}
                     style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: `1px solid ${C.line}`, background: C.panel, color: C.ink, fontSize: 12, boxSizing: "border-box" }} />
+                  {tipo.porFoto && (
+                    <div style={{ display: "flex", gap: 3, marginTop: 6 }}>
+                      {NIVEIS_RINGELMANN.map(n => (
+                        <button key={n.n} title={`Nível ${n.n} — ${n.pct}%`}
+                          onClick={() => setFotos(fotos.map(x => x.id === f.id ? { ...x, nivel: n.n } : x))}
+                          style={{
+                            flex: 1, padding: "6px 0", borderRadius: 5, fontSize: 10.5, fontWeight: 800,
+                            cursor: "pointer", background: n.cor, color: n.n >= 3 ? "#fff" : "#11151a",
+                            border: `2px solid ${f.nivel === n.n ? C.brand : "transparent"}`,
+                          }}>{n.n}</button>
+                      ))}
+                    </div>
+                  )}
                   <button onClick={() => setFotos(fotos.filter(x => x.id !== f.id))}
                     style={{ marginTop: 6, width: "100%", padding: "5px", borderRadius: 6, border: "none", background: "#3a1d24", color: C.bad, fontSize: 11, cursor: "pointer" }}>Remover</button>
                 </div>
               </div>
             ))}
           </div>
-          <datalist id="fotolist">{FOTOS_SUGERIDAS.map(f => <option key={f} value={f} />)}</datalist>
+          <datalist id="fotolist">{tipo.fotos.map(f => <option key={f} value={f} />)}</datalist>
 
           <div style={{ marginTop: 16 }}>
             <label style={{ display: "block", fontSize: 12, color: C.sub, marginBottom: 5 }}>Observações</label>
@@ -525,9 +931,13 @@ function Laudo({ id }) {
   if (erro) return <TelaMsg titulo="Ops" texto={erro} />;
   if (!v) return <TelaMsg titulo="Carregando laudo…" texto="" />;
 
+  const tipo = tipoDe(v);
+  const extra = v.dados_extra || {};
   const bySecao = {};
   itens.forEach(it => { (bySecao[it.secao] ||= []).push(it); });
-  const conforme = v.parecer === "CONFORME";
+  const conforme = v.parecer === "CONFORME" || v.parecer === "APROVADO";
+  const ring = tipo.porFoto ? resumoRingelmann(fotos) : null;
+  const limiteRing = Number(extra.limite) || LIMITE_RINGELMANN_PADRAO;
 
   // numero do laudo: ano + 6 primeiros do id
   const numeroLaudo = `${new Date(v.concluido_em || v.criado_em).getFullYear()}-${(v.id || "").replace(/-/g, "").slice(0, 6).toUpperCase()}`;
@@ -539,7 +949,7 @@ function Laudo({ id }) {
   // status por secao para os selos
   const secaoStatus = {};
   Object.entries(bySecao).forEach(([sec, list]) => {
-    secaoStatus[sec] = list.some(it => it.resultado === "NAO CONFORME" || it.resultado === "REMARCADO") ? "reprovado" : "aprovado";
+    secaoStatus[sec] = list.some(it => reprova(it.resultado)) ? "reprovado" : "aprovado";
   });
 
   const dado = (label, val) => (
@@ -547,7 +957,10 @@ function Laudo({ id }) {
       <div style={{ fontSize: 13.5, fontWeight: 600, color: "#1a2230" }}>{val || "—"}</div></div>
   );
 
-  const resultColor = (r) => (r === "OK" || r === "ORIGINAL") ? "#16a34a" : r === "NAO APLICAVEL" ? "#94a3b8" : "#dc2626";
+  const resultColor = (r) =>
+    (r === "OK" || r === "ORIGINAL" || r === "SIM") ? "#16a34a"
+      : (r === "NAO APLICAVEL" || r === "N/A") ? "#94a3b8"
+        : "#dc2626";
 
   return (
     <div style={{ background: "#e9edf2", minHeight: "100vh", padding: "20px 0" }}>
@@ -575,7 +988,7 @@ function Laudo({ id }) {
                 </div>
               </div>
               <div style={{ textAlign: "right", flexShrink: 0 }}>
-                <div style={{ fontSize: 10, letterSpacing: 2, color: "#14b8a6", fontWeight: 800 }}>LAUDO CAUTELAR</div>
+                <div style={{ fontSize: 10, letterSpacing: 1.6, color: "#14b8a6", fontWeight: 800, maxWidth: 210 }}>{tipo.nome.toUpperCase()}</div>
                 <div style={{ fontSize: 12, color: "#5b6472", marginTop: 2 }}>Nº {numeroLaudo}</div>
                 <div style={{
                   marginTop: 8, padding: "6px 16px", borderRadius: 6, fontWeight: 800, fontSize: 14, color: "#fff",
@@ -595,53 +1008,90 @@ function Laudo({ id }) {
             </div>
           </div>
 
-          {/* ===== SELOS POR SEÇÃO ===== */}
+          {/* ===== RESUMO: selos por seção, ou medição Ringelmann ===== */}
           <div style={{ padding: "18px 28px", borderBottom: "1px solid #e4e9ef" }}>
             <SectionTitle>Resumo do laudo</SectionTitle>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
-              {Object.keys(bySecao).map(sec => {
-                const ok = secaoStatus[sec] === "aprovado";
-                return (
-                  <div key={sec} style={{ flex: "1 1 120px", textAlign: "center", padding: "12px 8px", borderRadius: 10, background: ok ? "#f0fdf4" : "#fef2f2", border: `1px solid ${ok ? "#bbf7d0" : "#fecaca"}` }}>
-                    <div style={{ width: 34, height: 34, margin: "0 auto 6px", borderRadius: "50%", background: ok ? "#16a34a" : "#dc2626", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 18 }}>{ok ? "✓" : "!"}</div>
-                    <div style={{ fontSize: 10.5, fontWeight: 700, color: "#374151" }}>{sec}</div>
-                  </div>
-                );
-              })}
-            </div>
+
+            {ring ? (
+              <div style={{ marginTop: 12 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "10px 18px", marginBottom: 14 }}>
+                  {dado("Densidade média", `${ring.media}%`)}
+                  {dado("Nível máximo aferido", ring.maior ? `Ringelmann ${ring.maior}` : "—")}
+                  {dado("Limite adotado", `Ringelmann ${limiteRing}`)}
+                  {dado("Fotos avaliadas", ring.n)}
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {NIVEIS_RINGELMANN.map(n => {
+                    const qtd = ring.porNivel[n.n] || 0;
+                    const acima = n.n > limiteRing;
+                    return (
+                      <div key={n.n} style={{ flex: 1, textAlign: "center", border: `1px solid ${qtd && acima ? "#fecaca" : "#e4e9ef"}`, borderRadius: 8, overflow: "hidden", background: qtd && acima ? "#fef2f2" : "#fff" }}>
+                        <div style={{ height: 22, background: n.cor }} />
+                        <div style={{ padding: "5px 2px" }}>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: qtd ? "#1a2230" : "#c2c9d2" }}>{qtd}</div>
+                          <div style={{ fontSize: 9, color: "#8a94a3" }}>Nível {n.n} · {n.pct}%</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
+                {Object.keys(bySecao).map(sec => {
+                  const ok = secaoStatus[sec] === "aprovado";
+                  return (
+                    <div key={sec} style={{ flex: "1 1 120px", textAlign: "center", padding: "12px 8px", borderRadius: 10, background: ok ? "#f0fdf4" : "#fef2f2", border: `1px solid ${ok ? "#bbf7d0" : "#fecaca"}` }}>
+                      <div style={{ width: 34, height: 34, margin: "0 auto 6px", borderRadius: "50%", background: ok ? "#16a34a" : "#dc2626", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 18 }}>{ok ? "✓" : "!"}</div>
+                      <div style={{ fontSize: 10.5, fontWeight: 700, color: "#374151", lineHeight: 1.25 }}>{sec}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* ===== DADOS DO VEÍCULO ===== */}
+          {/* ===== DADOS DO VEÍCULO / DA MEDIÇÃO ===== */}
           <div style={{ padding: "18px 28px", borderBottom: "1px solid #e4e9ef" }}>
-            <SectionTitle>Dados do veículo</SectionTitle>
+            <SectionTitle>{tipo.porFoto ? "Dados da medição" : "Dados do veículo"}</SectionTitle>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "14px 18px", marginTop: 12 }}>
-              {dado("Placa", v.placa)}
-              {dado("Marca/Modelo", `${v.fabricante || ""} ${v.modelo || ""}`.trim())}
-              {dado("Cor", v.cor)}
-              {dado("Ano fab/mod", `${v.ano_fab || "—"}/${v.ano_mod || "—"}`)}
-              {dado("Combustível", v.combustivel)}
-              {dado("KM", v.km)}
-              {dado("UF", v.uf)}
-              {dado("Motor", v.motor)}
-              {dado("Chassi", v.chassi)}
-              {dado("Renavam", v.renavam)}
+              {tipo.campos
+                .filter(c => c.k !== "limite")
+                .map(c => (
+                  <div key={c.k} style={c.largo ? { gridColumn: "span 2" } : undefined}>
+                    {dado(c.label, c.extra ? extra[c.k] : v[c.k])}
+                  </div>
+                ))}
             </div>
+            {tipo.referencia && (
+              <div style={{ fontSize: 10, color: "#8a94a3", marginTop: 12 }}>{tipo.referencia}</div>
+            )}
           </div>
 
           {/* ===== SEÇÕES DE ITENS ===== */}
-          {Object.entries(bySecao).map(([sec, list]) => (
-            <div key={sec} style={{ padding: "16px 28px", borderBottom: "1px solid #e4e9ef" }}>
-              <SectionTitle>{sec}</SectionTitle>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 24px", marginTop: 10 }}>
-                {list.map(it => (
-                  <div key={it.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12.5, borderBottom: "1px solid #f1f4f7", paddingBottom: 4 }}>
-                    <span style={{ color: "#4b5563" }}>{it.item}</span>
-                    <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 4, color: "#fff", background: resultColor(it.resultado), whiteSpace: "nowrap" }}>{it.resultado}</span>
-                  </div>
-                ))}
+          {Object.entries(bySecao).map(([sec, list]) => {
+            // itens longos (checklist SSMA) ficam ilegíveis em duas colunas
+            const longos = list.some(it => (it.item || "").length > 60);
+            return (
+              <div key={sec} style={{ padding: "16px 28px", borderBottom: "1px solid #e4e9ef" }}>
+                <SectionTitle>{sec}</SectionTitle>
+                <div style={{ display: "grid", gridTemplateColumns: longos ? "1fr" : "1fr 1fr", gap: "6px 24px", marginTop: 10 }}>
+                  {list.map(it => (
+                    <div key={it.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, fontSize: 12.5, borderBottom: "1px solid #f1f4f7", paddingBottom: 4, breakInside: "avoid" }}>
+                      <span style={{ color: "#4b5563", lineHeight: 1.4 }}>{it.item}</span>
+                      <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 4, color: "#fff", background: resultColor(it.resultado), whiteSpace: "nowrap", marginTop: 1 }}>{it.resultado}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
+            );
+          })}
+
+          {tipo.legenda && Object.keys(bySecao).length > 0 && (
+            <div style={{ padding: "10px 28px", borderBottom: "1px solid #e4e9ef", fontSize: 10, color: "#8a94a3" }}>
+              Legenda: {tipo.legenda}
             </div>
-          ))}
+          )}
 
           {/* ===== OBSERVAÇÕES ===== */}
           {v.observacoes && (
@@ -658,7 +1108,16 @@ function Laudo({ id }) {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginTop: 12 }}>
                 {fotos.map(f => (
                   <div key={f.id} style={{ breakInside: "avoid" }}>
-                    <img src={f.url} alt={f.legenda} style={{ width: "100%", height: 130, objectFit: "cover", borderRadius: 6, border: "1px solid #e4e9ef" }} />
+                    <div style={{ position: "relative" }}>
+                      <img src={f.url} alt={f.legenda} style={{ width: "100%", height: 130, objectFit: "cover", borderRadius: 6, border: "1px solid #e4e9ef", display: "block" }} />
+                      {f.nivel && (
+                        <div style={{
+                          position: "absolute", top: 6, right: 6, padding: "2px 7px", borderRadius: 4,
+                          fontSize: 9.5, fontWeight: 800, color: "#fff",
+                          background: f.nivel > limiteRing ? "#dc2626" : "#16a34a",
+                        }}>NÍVEL {f.nivel} · {f.densidade ?? f.nivel * 20}%</div>
+                      )}
+                    </div>
                     <div style={{ fontSize: 10, color: "#5b6472", textAlign: "center", marginTop: 4, textTransform: "uppercase", letterSpacing: .3 }}>{f.legenda}</div>
                   </div>
                 ))}
@@ -669,7 +1128,7 @@ function Laudo({ id }) {
           {/* ===== TERMO TÉCNICO ===== */}
           <div style={{ padding: "16px 28px", borderBottom: "1px solid #e4e9ef" }}>
             <SectionTitle>Termo técnico</SectionTitle>
-            <div style={{ fontSize: 10.5, color: "#6b7280", lineHeight: 1.6, marginTop: 8, textAlign: "justify" }}>{TERMO}</div>
+            <div style={{ fontSize: 10.5, color: "#6b7280", lineHeight: 1.6, marginTop: 8, textAlign: "justify" }}>{tipo.termo || TERMO}</div>
           </div>
 
           {/* ===== ASSINATURA + QR ===== */}
@@ -737,8 +1196,10 @@ export default function App() {
   let view;
   const mV = hash.match(/^#\/v\/(.+)$/);
   const mL = hash.match(/^#\/laudo\/(.+)$/);
-  if (mV) view = <Formulario token={decodeURIComponent(mV[1])} />;
-  else if (mL) view = <Laudo id={mL[1]} />;
+  // a key força remontagem ao trocar de link: sem ela o formulario reaproveita
+  // o estado da vistoria anterior (respostas, passo e a tela de "ja enviada")
+  if (mV) view = <Formulario key={mV[1]} token={decodeURIComponent(mV[1])} />;
+  else if (mL) view = <Laudo key={mL[1]} id={mL[1]} />;
   else view = <Painel />;
 
   const isLaudo = !!mL;
