@@ -357,16 +357,15 @@ const SUPABASE_URL = "https://oiwcnyolidryuixuabzs.supabase.co";
 const SUPABASE_KEY = "sb_publishable_mDhb1o9lTurpOSAto2Jv-g_tmbbFWwz";
 const BUCKET = "vistoria-fotos";
 
-/* logo oficial (vive em /public, entao vai junto no build) */
-const LOGO = "/logo-soares.png";
+/* logo oficial (vive em /public, entao vai junto no build).
+   o ?v serve para o cache do navegador nao entregar uma versao antiga
+   depois de trocar o arquivo; incrementar ao substituir a imagem */
+const LOGO = "/logo-soares.png?v=2";
 
 /* ---------- dados oficiais da empresa (do CNPJ) ---------- */
 const EMPRESA = {
   razao: "SOARES SERVIÇOS CONSULTORIA E LOCAÇÃO LTDA",
   fantasia: "Soares Serviços",
-  // assinatura da marca: o PNG oficial traz outro dizer, entao ela e
-  // desenhada como texto ao lado da logo
-  assinatura: "SERVIÇOS CONSULTORIA E LOCAÇÃO",
   cnpj: "38.570.390/0001-08",
   porte: "EPP",
   endereco: "R. Bonfim, SN, Quadra 06 Lote 01, Bouganville — Barro Alto/GO, CEP 76.390-000",
@@ -1119,12 +1118,8 @@ function Laudo({ id }) {
           <div style={{ padding: "20px 28px 16px", borderBottom: `4px solid #0f2942` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
-                <img src={LOGO} alt={EMPRESA.fantasia}
-                  style={{ height: 34, width: "auto", display: "block" }} />
-                <div style={{
-                  fontSize: 8.5, color: "#1a2230", letterSpacing: 3.1, fontWeight: 500,
-                  marginTop: 4, marginBottom: 10, whiteSpace: "nowrap",
-                }}>{EMPRESA.assinatura}</div>
+                <img src={LOGO} alt={EMPRESA.razao}
+                  style={{ height: 44, width: "auto", display: "block", marginBottom: 11 }} />
                 <div style={{ fontSize: 11, color: "#5b6472", marginTop: 3, lineHeight: 1.5 }}>
                   {/* razao social por extenso: o laudo e documento tecnico */}
                   {EMPRESA.razao}<br />
