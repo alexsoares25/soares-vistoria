@@ -357,10 +357,16 @@ const SUPABASE_URL = "https://oiwcnyolidryuixuabzs.supabase.co";
 const SUPABASE_KEY = "sb_publishable_mDhb1o9lTurpOSAto2Jv-g_tmbbFWwz";
 const BUCKET = "vistoria-fotos";
 
+/* logo oficial (vive em /public, entao vai junto no build) */
+const LOGO = "/logo-soares.png";
+
 /* ---------- dados oficiais da empresa (do CNPJ) ---------- */
 const EMPRESA = {
   razao: "SOARES SERVIÇOS CONSULTORIA E LOCAÇÃO LTDA",
   fantasia: "Soares Serviços",
+  // assinatura da marca: o PNG oficial traz outro dizer, entao ela e
+  // desenhada como texto ao lado da logo
+  assinatura: "SERVIÇOS CONSULTORIA E LOCAÇÃO",
   cnpj: "38.570.390/0001-08",
   porte: "EPP",
   endereco: "R. Bonfim, SN, Quadra 06 Lote 01, Bouganville — Barro Alto/GO, CEP 76.390-000",
@@ -1112,16 +1118,19 @@ function Laudo({ id }) {
           {/* ===== CABEÇALHO EMPRESA ===== */}
           <div style={{ padding: "20px 28px 16px", borderBottom: `4px solid #0f2942` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                {/* marca / monograma */}
-                <div style={{ width: 54, height: 54, borderRadius: 10, background: "linear-gradient(135deg,#0f2942,#14b8a6)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 22, flexShrink: 0 }}>S</div>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "#0f2942", lineHeight: 1.1 }}>{EMPRESA.razao}</div>
-                  <div style={{ fontSize: 11, color: "#5b6472", marginTop: 3, lineHeight: 1.5 }}>
-                    CNPJ {EMPRESA.cnpj} · {EMPRESA.porte}<br />
-                    {EMPRESA.endereco}<br />
-                    {EMPRESA.telefone} · {EMPRESA.email}
-                  </div>
+              <div>
+                <img src={LOGO} alt={EMPRESA.fantasia}
+                  style={{ height: 34, width: "auto", display: "block" }} />
+                <div style={{
+                  fontSize: 8.5, color: "#1a2230", letterSpacing: 3.1, fontWeight: 500,
+                  marginTop: 4, marginBottom: 10, whiteSpace: "nowrap",
+                }}>{EMPRESA.assinatura}</div>
+                <div style={{ fontSize: 11, color: "#5b6472", marginTop: 3, lineHeight: 1.5 }}>
+                  {/* razao social por extenso: o laudo e documento tecnico */}
+                  {EMPRESA.razao}<br />
+                  CNPJ {EMPRESA.cnpj} · {EMPRESA.porte}<br />
+                  {EMPRESA.endereco}<br />
+                  {EMPRESA.telefone} · {EMPRESA.email}
                 </div>
               </div>
               <div style={{ textAlign: "right", flexShrink: 0 }}>
@@ -1269,6 +1278,7 @@ function Laudo({ id }) {
           </div>
 
           {/* ===== ASSINATURA + QR ===== */}
+          <div className="bloco-fecho">
           <div style={{ padding: "24px 28px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 20 }}>
             <div style={{ flex: 1 }}>
               <div style={{ borderTop: "1px solid #1a2230", width: 260, paddingTop: 6, marginTop: 30 }}>
@@ -1288,9 +1298,22 @@ function Laudo({ id }) {
             <span>{EMPRESA.fantasia} · {EMPRESA.cnpj}</span>
             <span>Laudo Nº {numeroLaudo} · {dataConc.toLocaleDateString("pt-BR")}</span>
           </div>
+          </div>
         </div>
       </div>
-      <style>{`@media print { .noprint{display:none!important} body{background:#fff} #laudo{box-shadow:none;border-radius:0} @page{margin:8mm} }`}</style>
+      <style>{`
+        @media print {
+          .noprint { display: none !important }
+          body { background: #fff }
+          #laudo { box-shadow: none; border-radius: 0 }
+          @page { margin: 8mm }
+          /* sem isto o navegador descarta os fundos dos selos e badges */
+          #laudo, #laudo * { -webkit-print-color-adjust: exact; print-color-adjust: exact }
+          /* assinatura e rodape nao se separam, e o rodape nao fica orfao */
+          .bloco-fecho { break-inside: avoid; page-break-inside: avoid }
+          #laudo img { break-inside: avoid }
+        }
+      `}</style>
     </div>
   );
 }
