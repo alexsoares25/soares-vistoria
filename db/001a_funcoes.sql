@@ -189,7 +189,11 @@ $$;
 grant execute on function public.vistoria_por_token(text)                     to anon, authenticated;
 grant execute on function public.enviar_vistoria(text, jsonb, jsonb, jsonb, jsonb) to anon, authenticated;
 grant execute on function public.laudo_por_id(uuid)                           to anon, authenticated;
+-- funcoes nascem com execute para PUBLIC; revogar so de anon nao basta,
+-- porque anon herda de PUBLIC
+revoke execute on function public.is_admin() from public;
 revoke execute on function public.is_admin() from anon;
+grant  execute on function public.is_admin() to authenticated;
 
 -- ------------------------------------------------------------
 -- 4. pendencia apontada pelo advisor do Supabase
