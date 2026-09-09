@@ -537,7 +537,6 @@ const EMPRESA = {
   respTecnico: "Davidson Kazuo Alves Shirato",
   respTitulo: "Engenheiro Mecânico",
   respCrea: "36772/D-DF",
-  respRnp: "0724195246",
   // mantido por compatibilidade com o rodape antigo
   responsavel: "Alex Vieira Soares",
   respFuncao: "Responsável Técnico / Engenheiro",
@@ -1841,7 +1840,6 @@ function Laudo({ id }) {
                 <div style={{ fontSize: 12, fontWeight: 700 }}>{EMPRESA.respTecnico}</div>
                 <div style={{ fontSize: 10.5, color: "#5b6472" }}>{EMPRESA.respTitulo} — aprovou o laudo</div>
                 <div style={{ fontSize: 10.5, color: "#5b6472" }}>CREA {EMPRESA.respCrea}</div>
-                <div style={{ fontSize: 10.5, color: "#5b6472" }}>RNP {EMPRESA.respRnp}</div>
               </div>
             </div>
             <div style={{ textAlign: "center", flexShrink: 0 }}>
