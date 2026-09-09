@@ -229,6 +229,7 @@ const CAMPOS_VEICULO = [
 const TIPOS = {
   cautelar: {
     id: "cautelar",
+    criterio: "Inspeção visual de procedência e integridade estrutural, sem desmonte de conjuntos, conforme procedimento interno de vistoria cautelar da contratada.",
     nome: "Laudo Cautelar",
     subtitulo: "Vistoria cautelar de procedência veicular",
     resumo: "Estrutura, pintura, vidros, identificação e etiquetas",
@@ -298,6 +299,7 @@ const TIPOS = {
 
   ssma: {
     id: "ssma",
+    criterio: "Checklist de Mobilização de SSMA — documento de referência PN 0693 / FM-0441 Rev. 03, fornecido pela contratante.",
     nome: "Checklist de Mobilização SSMA",
     subtitulo: "Checklist de Mobilização de SSMA — Veículos Automotores",
     resumo: "Conformidade de veículos para mobilização (PN 0693 / FM-0441)",
@@ -334,6 +336,7 @@ const TIPOS = {
 
   ringelmann: {
     id: "ringelmann",
+    criterio: "Comparação visual da densidade colorimétrica da fumaça com a escala de Ringelmann, referenciada na Portaria MINTER nº 100/1980 e na Portaria IBAMA nº 85/1996.",
     nome: "Emissão de Fumaça — Ringelmann",
     subtitulo: "Avaliação de emissão de fumaça preta pela escala de Ringelmann",
     resumo: "Medição de densidade colorimétrica em veículos a diesel",
@@ -378,6 +381,9 @@ const TIPOS = {
   },
   estrutural: {
     id: "estrutural",
+    criterio: "Inspeção visual e funcional de estrutura, freios, motor e pintura, com registro fotográfico por item, " +
+      "conforme procedimento interno da contratada. A classificação dos defeitos e os princípios de execução seguem as " +
+      "diretrizes da ABNT NBR 14040-1:1998 — Inspeção de segurança veicular, veículos leves e pesados, Parte 1.",
     nome: "Laudo Estrutural",
     tituloLaudo: "LAUDO ESTRUTURAL DE ÔNIBUS E MICRO ÔNIBUS",
     subtitulo: "Vistoria estrutural de ônibus e micro-ônibus",
@@ -409,6 +415,7 @@ const TIPOS = {
       { k: "ano_mod", label: "Ano modelo" },
       { k: "combustivel", label: "Combustível" },
       { k: "km", label: "Hodômetro" },
+      { k: "art", label: "Nº da ART", extra: true },
     ],
     secoes: [
       { nome: "ESTRUTURA", escala: "estrutural", itens: [
@@ -458,7 +465,8 @@ const TIPOS = {
       ]},
     ],
     fotos: [],
-    legenda: "(APROVADO) Conforme · (RESTRIÇÃO) Conforme com ressalva · (REPROVADO) Não conforme",
+    // classificacao conforme ABNT NBR 14040-1:1998, definicoes 3.11 a 3.13
+    legenda: "APROVADO — sem defeito · RESTRIÇÃO — defeito grave, que afeta a segurança e restringe a circulação até reparação (NBR 14040-1, 3.12) · REPROVADO — defeito muito grave, que impede a livre circulação até reparação (NBR 14040-1, 3.13)",
     termo:
       "A presente vistoria avalia as condições estruturais, mecânicas e de pintura do veículo, por inspeção " +
       "visual e funcional, sem desmonte de conjuntos ou ensaios destrutivos. Cada item relacionado neste laudo " +
@@ -482,6 +490,16 @@ const NIVEIS_RINGELMANN = [
 const LIMITE_RINGELMANN_PADRAO = 2;
 
 const tipoDe = (v) => TIPOS[v?.tipo] || TIPOS.cautelar;
+
+/* A NBR 14040-1, definicao 3.14, diz que o relatorio de inspecao indica a
+   condicao de "aprovado ou reprovado". O laudo estrutural usa esse
+   vocabulario; os demais mantem conforme/nao conforme. Laudos antigos
+   ficaram gravados com o texto antigo, entao a traducao e feita na
+   exibicao — o significado e o mesmo. */
+const PARECER_EXIBIDO = {
+  estrutural: { "CONFORME": "APROVADO", "NAO CONFORME": "REPROVADO" },
+};
+const parecerDe = (v) => (PARECER_EXIBIDO[v?.tipo]?.[v?.parecer]) || v?.parecer || "—";
 
 
 /* ============================================================
@@ -511,9 +529,33 @@ const EMPRESA = {
   endereco: "R. Bonfim, SN, Quadra 06 Lote 01, Bouganville — Barro Alto/GO, CEP 76.390-000",
   telefone: "(62) 8273-6369",
   email: "soaresservicoselocacao@gmail.com",
+  // A NBR ISO/IEC 17020 exige identificar quem executou a inspecao e quem
+  // a aprova. Nos laudos que a Soares emite sao pessoas diferentes: o
+  // analista executa, o responsavel tecnico com registro no CREA aprova.
+  analista: "Alex Vieira Soares",
+  analistaCpf: "056.167.701-83",
+  respTecnico: "Guilherme Marquezan Nascimento",
+  respTitulo: "Engenheiro Mecânico",
+  respCrea: "1020108800D-GO",
+  // mantido por compatibilidade com o rodape antigo
   responsavel: "Alex Vieira Soares",
   respFuncao: "Responsável Técnico / Engenheiro",
 };
+
+/* Clausula de integridade do documento, exigida de relatorios de inspecao */
+/* NBR 14040-1:1998, 4.1: a inspecao nao desmonta componentes (alinea a) e
+   nao pode ser feita por quem tenha interesse no resultado (alinea d).
+   Declarar isso no laudo e o que sustenta a isencao do documento. */
+const DECLARACAO_IMPARCIALIDADE =
+  "Declara-se que esta inspeção foi executada sem desmontagem de componentes e sem qualquer correção de " +
+  "irregularidades, e que a contratada não possui interesse no resultado desta inspeção, não tendo participado " +
+  "da venda, manutenção ou reparo do veículo inspecionado, em observância às diretrizes da ABNT NBR 14040-1:1998, " +
+  "seção 4.1, alíneas (a) e (d).";
+
+const CLAUSULA_REPRODUCAO =
+  "Este documento refere-se exclusivamente ao item inspecionado e identificado acima. " +
+  "Sua reprodução é permitida somente na íntegra; reproduções parciais não têm validade. " +
+  "A autenticidade pode ser verificada pelo QR Code ou pelo número do laudo no endereço indicado.";
 
 /* Termo técnico padrão do laudo */
 const TERMO = `O objetivo da presente vistoria é a verificação da procedência e da qualidade estrutural e estética do veículo, para melhor conhecimento do bem. A ${EMPRESA.fantasia} limita-se a indicar, no momento da vistoria, eventuais avarias externas e alterações estruturais visíveis, sem desmonte de peças ou manuseio mecânico do veículo. O perfeito funcionamento de itens mecânicos, elétricos e eletrônicos, bem como a autenticidade do hodômetro, não são atestados nesta vistoria. As informações são válidas apenas para a data e o momento de sua realização. Este laudo não substitui perícia oficial e não garante, por si só, a aceitação por seguradoras ou instituições financeiras, que adotam critérios próprios.`;
@@ -1530,7 +1572,7 @@ function Laudo({ id }) {
                 <div style={{
                   marginTop: 8, padding: "6px 16px", borderRadius: 6, fontWeight: 800, fontSize: 14, color: "#fff",
                   background: conforme ? "#16a34a" : "#dc2626", display: "inline-block",
-                }}>{v.parecer}</div>
+                }}>{parecerDe(v)}</div>
               </div>
             </div>
           </div>
@@ -1581,7 +1623,7 @@ function Laudo({ id }) {
                 }}>
                   <span style={{ fontSize: 13, fontWeight: 800, color: "#1a2230", letterSpacing: .3 }}>
                     NÍVEL AFERIDO: Nº {ring.maior} · DENS. {ring.media}% —{" "}
-                    <span style={{ color: conforme ? "#16a34a" : "#dc2626" }}>{v.parecer}</span>
+                    <span style={{ color: conforme ? "#16a34a" : "#dc2626" }}>{parecerDe(v)}</span>
                   </span>
                 </div>
               </div>
@@ -1734,32 +1776,86 @@ function Laudo({ id }) {
             </div>
           )}
 
+          {/* ===== CRITÉRIO DE INSPEÇÃO (NBR ISO/IEC 17020, item h) ===== */}
+          {tipo.criterio && (
+            <div className="secao-laudo" style={{ padding: "14px 28px", borderBottom: "1px solid #e4e9ef" }}>
+              <SectionTitle>Critério de inspeção adotado</SectionTitle>
+              <div style={{ fontSize: 11.5, color: "#4b5563", lineHeight: 1.6, marginTop: 7 }}>{tipo.criterio}</div>
+              <div style={{ fontSize: 11.5, color: "#4b5563", lineHeight: 1.6, marginTop: 9 }}>{DECLARACAO_IMPARCIALIDADE}</div>
+              {pendencias.length > 0 && (
+                <div style={{ marginTop: 10, padding: "9px 12px", borderRadius: 7, background: "#fffbeb", border: "1px solid #fde68a", fontSize: 11.5, color: "#78350f", lineHeight: 1.55 }}>
+                  <strong>Inspeção de retorno.</strong> Os {pendencias.length} {pendencias.length > 1 ? "itens registrados como não conformes" : "item registrado como não conforme"} devem ser
+                  reparados e submetidos a nova inspeção, restrita a esses itens, conforme a ABNT NBR 14040-1:1998, definição 3.15.
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ===== TERMO TÉCNICO ===== */}
           <div style={{ padding: "16px 28px", borderBottom: "1px solid #e4e9ef" }}>
             <SectionTitle>Termo técnico</SectionTitle>
             <div style={{ fontSize: 10.5, color: "#6b7280", lineHeight: 1.6, marginTop: 8, textAlign: "justify" }}>{tipo.termo || TERMO}</div>
           </div>
 
-          {/* ===== ASSINATURA + QR ===== */}
+          {/* ===== CONCLUSÃO + RESPONSÁVEIS (NBR ISO/IEC 17020, item 7.4.2) ===== */}
           <div className="bloco-fecho">
-          <div style={{ padding: "24px 28px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 20 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ borderTop: "1px solid #1a2230", width: 260, paddingTop: 6, marginTop: 30 }}>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>{EMPRESA.responsavel}</div>
-                <div style={{ fontSize: 11, color: "#5b6472" }}>{EMPRESA.respFuncao}</div>
-                <div style={{ fontSize: 11, color: "#5b6472" }}>{EMPRESA.fantasia}</div>
+          <div style={{ padding: "18px 28px", borderTop: "2px solid #0f2942" }}>
+            <div style={{ background: "#0f2942", color: "#fff", textAlign: "center", padding: "6px", fontSize: 11, fontWeight: 800, letterSpacing: 2, marginBottom: 0 }}>
+              CONCLUSÃO
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr 1fr", border: "1px solid #e4e9ef", borderTop: "none" }}>
+              <div style={{ padding: "14px 10px", textAlign: "center", borderRight: "1px solid #e4e9ef" }}>
+                <div style={{ fontSize: 9.5, color: "#8a94a3", letterSpacing: .6, marginBottom: 8 }}>PARECER</div>
+                <div style={{
+                  display: "inline-block", padding: "6px 18px", borderRadius: 5, fontWeight: 800, fontSize: 14,
+                  color: "#fff", background: conforme ? "#16a34a" : "#dc2626",
+                }}>{parecerDe(v)}</div>
+              </div>
+              <div style={{ padding: "14px 16px", textAlign: "center", borderRight: "1px solid #e4e9ef" }}>
+                <div style={{ fontSize: 9.5, color: "#8a94a3", letterSpacing: .6, marginBottom: 8 }}>ART</div>
+                <div style={{ fontSize: 13, fontWeight: 600, borderBottom: "1px solid #1a2230", paddingBottom: 3, minHeight: 18 }}>
+                  {extra.art || " "}
+                </div>
+              </div>
+              <div style={{ padding: "14px 10px", textAlign: "center" }}>
+                <div style={{ fontSize: 9.5, color: "#8a94a3", letterSpacing: .6, marginBottom: 8 }}>DATA</div>
+                <div style={{ fontSize: 12, fontWeight: 600 }}>
+                  {dataConc.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}
+                </div>
               </div>
             </div>
-            <div style={{ textAlign: "center" }}>
-              <img src={qrSrc} alt="QR de validação" style={{ width: 96, height: 96, border: "1px solid #e4e9ef", borderRadius: 6 }} />
-              <div style={{ fontSize: 9, color: "#8a94a3", marginTop: 4, maxWidth: 110 }}>Valide este laudo online</div>
+          </div>
+
+          {/* quem executou e quem aprovou — exigencia de identificacao da norma */}
+          <div style={{ padding: "22px 28px 8px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 18 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ borderTop: "1px solid #1a2230", paddingTop: 6, marginTop: 34, maxWidth: 240 }}>
+                <div style={{ fontSize: 12, fontWeight: 700 }}>{v.vistoriador || EMPRESA.analista}</div>
+                <div style={{ fontSize: 10.5, color: "#5b6472" }}>Analista — executou a inspeção</div>
+                <div style={{ fontSize: 10.5, color: "#5b6472" }}>CPF {EMPRESA.analistaCpf}</div>
+              </div>
             </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ borderTop: "1px solid #1a2230", paddingTop: 6, marginTop: 34, maxWidth: 240 }}>
+                <div style={{ fontSize: 12, fontWeight: 700 }}>{EMPRESA.respTecnico}</div>
+                <div style={{ fontSize: 10.5, color: "#5b6472" }}>{EMPRESA.respTitulo} — aprovou o laudo</div>
+                <div style={{ fontSize: 10.5, color: "#5b6472" }}>CREA {EMPRESA.respCrea}</div>
+              </div>
+            </div>
+            <div style={{ textAlign: "center", flexShrink: 0 }}>
+              <img src={qrSrc} alt="QR de validação" style={{ width: 88, height: 88, border: "1px solid #e4e9ef", borderRadius: 6 }} />
+              <div style={{ fontSize: 8.5, color: "#8a94a3", marginTop: 3, maxWidth: 100 }}>Valide este laudo online</div>
+            </div>
+          </div>
+
+          <div style={{ padding: "6px 28px 16px", fontSize: 9.5, color: "#8a94a3", lineHeight: 1.55, textAlign: "justify" }}>
+            {CLAUSULA_REPRODUCAO}
           </div>
 
           {/* ===== RODAPÉ ===== */}
           <div style={{ padding: "12px 28px", background: "#0f2942", color: "#9fb3c8", fontSize: 10, lineHeight: 1.5, display: "flex", justifyContent: "space-between" }}>
-            <span>{EMPRESA.fantasia} · {EMPRESA.cnpj}</span>
-            <span>Laudo Nº {numeroLaudo} · {dataConc.toLocaleDateString("pt-BR")}</span>
+            <span>{EMPRESA.fantasia} · CNPJ {EMPRESA.cnpj}</span>
+            <span>Laudo Nº {numeroLaudo} · emitido em {dataConc.toLocaleDateString("pt-BR")}</span>
           </div>
           </div>
         </div>
