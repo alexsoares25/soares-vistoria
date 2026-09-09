@@ -173,6 +173,11 @@ const ESCALAS = {
   estado: { opcoes: ["OK", "NAO APLICAVEL", "NAO CONFORME"], padrao: "OK", reprova: ["NAO CONFORME"] },
   original: { opcoes: ["ORIGINAL", "NAO APLICAVEL", "REMARCADO"], padrao: "ORIGINAL", reprova: ["REMARCADO"] },
   conforme: { opcoes: ["SIM", "N/A", "NAO"], padrao: "SIM", reprova: ["NAO"] },
+  // o laudo estrutural tem um terceiro estado: atende, mas com ressalva
+  estrutural: {
+    opcoes: ["APROVADO", "RESTRIÇÃO", "REPROVADO"],
+    padrao: "APROVADO", reprova: ["REPROVADO"], ressalva: ["RESTRIÇÃO"],
+  },
 };
 
 const reprova = (resultado) =>
@@ -342,6 +347,98 @@ const TIPOS = {
       "cujos níveis de 1 a 5 correspondem a 20%, 40%, 60%, 80% e 100% de densidade, e reflete a condição do " +
       "veículo no momento e nas condições ambientais da medição.",
   },
+  estrutural: {
+    id: "estrutural",
+    nome: "Laudo Estrutural",
+    tituloLaudo: "LAUDO ESTRUTURAL DE ÔNIBUS E MICRO ÔNIBUS",
+    subtitulo: "Vistoria estrutural de ônibus e micro-ônibus",
+    resumo: "Estrutura, freios, motor e pintura — uma foto por item",
+    // cada item do checklist carrega a propria foto, com o nome do item
+    // como legenda; e o que diferencia este laudo dos demais
+    fotoPorItem: true,
+    art: true,
+    campos: [
+      { k: "prop_razao", label: "Razão social do proprietário", extra: true, largo: true },
+      { k: "prop_fantasia", label: "Nome fantasia", extra: true, largo: true },
+      { k: "prop_cnpj", label: "CPF / CNPJ", extra: true },
+      { k: "prop_cidade", label: "Cidade", extra: true },
+      { k: "prop_endereco", label: "Endereço", extra: true, largo: true },
+      { k: "prop_bairro", label: "Bairro", extra: true },
+      { k: "prop_responsavel", label: "Responsável", extra: true },
+      { k: "prop_contato", label: "Contato", extra: true },
+      { k: "prop_email", label: "E-mail", extra: true, largo: true },
+      { k: "placa", label: "Placa" },
+      { k: "renavam", label: "Renavam" },
+      { k: "chassi", label: "Chassi", largo: true },
+      { k: "fabricante", label: "Marca" },
+      { k: "modelo", label: "Modelo" },
+      { k: "motor", label: "Número do motor" },
+      { k: "cor", label: "Cor" },
+      { k: "carroceria", label: "Carroceria", extra: true },
+      { k: "tipo_veiculo", label: "Tipo", extra: true },
+      { k: "ano_fab", label: "Ano fabricação" },
+      { k: "ano_mod", label: "Ano modelo" },
+      { k: "combustivel", label: "Combustível" },
+      { k: "km", label: "Hodômetro" },
+    ],
+    secoes: [
+      { nome: "ESTRUTURA", escala: "estrutural", itens: [
+        "LONGARINA DIANTEIRA ESQUERDA", "LONGARINA DIANTEIRA DIREITA", "PAINEL",
+        "PAINEL CORTA FOGO", "PARALAMA INTERNO ESQUERDO", "PARALAMA INTERNO DIREITO",
+        "TORRE DO AMORTECEDOR DIANTEIRO ESQUERDO", "TORRE DO AMORTECEDOR DIANTEIRO DIREITO",
+        "COLUNA DIANTEIRA DIREITA", "COLUNA CENTRAL DIREITA", "COLUNA TRASEIRA DIREITA",
+        "CAIXA DE AR LADO DIREITO", "COLUNA DIANTEIRA LADO ESQUERDO",
+        "COLUNA CENTRAL LADO ESQUERDO", "COLUNA TRASEIRA LADO ESQUERDO",
+        "CAIXA DE AR LADO ESQUERDO", "LONGARINA TRASEIRA ESQUERDA",
+        "LONGARINA TRASEIRA DIREITA", "PAINEL TRASEIRO", "TETO ESTRUTURA", "CAIXA ESTEPE",
+        "PAINEL TRASEIRO COM ASSOALHO DO PORTA-MALAS (INTERIOR)", "CHAVE GERAL ELÉTRICA",
+      ]},
+      { nome: "ESTRUTURA EXTERNA", escala: "estrutural", itens: [
+        "LIMPEZA", "PARA-BRISAS", "VIDRO TRASEIRO", "REVESTIMENTO EXTERNO/CHAPARIA",
+        "MANCAL INFERIOR DAS PORTAS", "MANCAL SUPERIOR DAS PORTAS",
+        "FOLHA DAS PORTAS/REVESTIMENTO", "BORRACHA DAS PORTAS",
+        "COLUNA CENTRAL DIANTEIRA", "COLUNA CENTRAL TRASEIRA",
+        "PARA-CHOQUES DIANTEIRO/TRASEIRO", "ESPELHO RETROVISOR LD", "ESPELHO RETROVISOR LE",
+        "LIMPADORES DE PARA-BRISAS", "QUADRO DAS JANELAS LD", "QUADRO DAS JANELAS LE",
+        "PORTA-MALAS", "CAIXA DE BATERIAS", "CHASSI",
+      ]},
+      { nome: "ESTRUTURA INTERNA", escala: "estrutural", itens: [
+        "DEGRAU", "PISO DIANTEIRO", "PISO TRASEIRO", "PAINEL", "BANCO MOTORISTA",
+        "BANCOS DOS PASSAGEIROS", "CINTO DE SEGURANÇA", "REVESTIMENTO INTERNO",
+        "SAÍDA DE EMERGÊNCIA", "RETROVISOR INTERNO", "CORRIMÃO",
+      ]},
+      { nome: "FREIOS", escala: "estrutural", itens: [
+        "PEDAIS DE FREIOS", "PASTILHA DE FREIOS DIANTEIRA", "LONAS DE FREIO TRASEIRA",
+        "FREIO DE ESTACIONAMENTO", "TESTE DE FREIO DE PÉ", "TESTE DE FREIO ESTACIONÁRIO",
+      ]},
+      { nome: "MOTOR", escala: "estrutural", itens: [
+        "FUNCIONAMENTO", "VAZAMENTOS", "NÍVEL DE ÓLEO", "CORREIAS", "PARTIDA",
+        "FREIO MOTOR", "RESERVATÓRIO DE ÁGUA", "RESERVATÓRIO DE FLUIDO DE EMBREAGEM",
+        "FILTRO DE COMBUSTÍVEL SEPARADOR DE ÁGUA",
+        "RESERVATÓRIO FLUIDO DA DIREÇÃO HIDRÁULICA", "INDICADOR DE FILTRO DE AR",
+      ]},
+      { nome: "PINTURA", escala: "estrutural", itens: [
+        "LATERAL E/D", "LATERAL E/T", "LATERAL D/D", "LATERAL D/T",
+        "TAMPA DO PORTA-MALA D/D", "TAMPA DO PORTA-MALA D/T",
+        "PARA-CHOQUE E/D", "PARA-CHOQUE E/T", "PARA-CHOQUE D/D", "PARA-CHOQUE D/T",
+        "TETO E/D", "TETO D/D", "TETO E/T", "TETO D/T",
+        "FAROL E/D", "FAROL E/T", "FAROL D/D", "FAROL D/T",
+        "BRAKE LIGHT E/T", "BRAKE LIGHT D/T", "BRAKE LIGHT C/T",
+        "VIDRO PARA-BRISA D/D", "VIDRO PARA-BRISA E/D",
+        "ESPELHO RETROVISOR E/D", "ESPELHO RETROVISOR D/D",
+      ]},
+    ],
+    fotos: [],
+    legenda: "(APROVADO) Conforme · (RESTRIÇÃO) Conforme com ressalva · (REPROVADO) Não conforme",
+    termo:
+      "A presente vistoria avalia as condições estruturais, mecânicas e de pintura do veículo, por inspeção " +
+      "visual e funcional, sem desmonte de conjuntos ou ensaios destrutivos. Cada item relacionado neste laudo " +
+      "está acompanhado do respectivo registro fotográfico, obtido no momento da vistoria. Itens marcados como " +
+      "RESTRIÇÃO atendem com ressalva e exigem acompanhamento ou correção no prazo definido pelo contratante. " +
+      "O laudo reflete a condição do veículo na data e hora de sua realização e não abrange vícios ocultos nem " +
+      "componentes inacessíveis à inspeção visual.",
+  },
+
 };
 
 /* Escala de Ringelmann: nível -> densidade colorimétrica de referência */
@@ -612,6 +709,167 @@ function Login({ aoEntrar }) {
   );
 }
 
+
+/* =====================  CADASTROS (empresa e veiculo)  ===================== */
+const CAMPOS_EMPRESA = [
+  { k: "razao_social", label: "Razão social", largo: true, obrigatorio: true },
+  { k: "nome_fantasia", label: "Nome fantasia", largo: true },
+  { k: "cpf_cnpj", label: "CPF / CNPJ" },
+  { k: "responsavel", label: "Responsável" },
+  { k: "endereco", label: "Endereço", largo: true },
+  { k: "bairro", label: "Bairro" },
+  { k: "cidade", label: "Cidade" },
+  { k: "estado", label: "UF" },
+  { k: "cep", label: "CEP" },
+  { k: "telefone", label: "Telefone" },
+  { k: "celular", label: "Celular" },
+  { k: "email", label: "E-mail", largo: true },
+];
+
+const CAMPOS_VEICULO_CAD = [
+  { k: "placa", label: "Placa", obrigatorio: true },
+  { k: "renavam", label: "Renavam" },
+  { k: "chassi", label: "Chassi", largo: true },
+  { k: "marca", label: "Marca" },
+  { k: "modelo", label: "Modelo" },
+  { k: "numero_motor", label: "Número do motor" },
+  { k: "cor", label: "Cor" },
+  { k: "carroceria", label: "Carroceria" },
+  { k: "tipo", label: "Tipo" },
+  { k: "especie", label: "Espécie" },
+  { k: "categoria", label: "Categoria" },
+  { k: "ano_fabricacao", label: "Ano fabricação" },
+  { k: "ano_modelo", label: "Ano modelo" },
+  { k: "combustivel", label: "Combustível" },
+  { k: "potencia", label: "Potência" },
+  { k: "cilindrada", label: "Cilindrada" },
+  { k: "capacidade_passageiros", label: "Capacidade (passageiros)", numero: true },
+  { k: "km", label: "Hodômetro" },
+  { k: "tacografo", label: "Tacógrafo" },
+  { k: "municipio", label: "Município" },
+  { k: "nacionalidade", label: "Nacionalidade" },
+  { k: "situacao", label: "Situação" },
+  { k: "restricoes", label: "Restrições", largo: true },
+  { k: "observacoes", label: "Observações", largo: true },
+];
+
+function Cadastro({ tabela, titulo, campos, empresas, aoMudar }) {
+  const [lista, setLista] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState(null);
+  const [edit, setEdit] = useState(null);   // objeto em edicao, ou null
+  const [busca, setBusca] = useState("");
+  const [salvando, setSalvando] = useState(false);
+
+  const carregar = useCallback(async () => {
+    setCarregando(true); setErro(null);
+    try { setLista(await api.select(tabela, "select=*&order=criado_em.desc")); }
+    catch (e) { setErro(e.message || "Não consegui carregar."); }
+    setCarregando(false);
+  }, [tabela]);
+  useEffect(() => { carregar(); }, [carregar]);
+
+  async function salvar() {
+    const faltando = campos.filter(c => c.obrigatorio && !String(edit[c.k] || "").trim());
+    if (faltando.length) { alert("Preencha: " + faltando.map(c => c.label).join(", ")); return; }
+    setSalvando(true);
+    try {
+      const corpo = {};
+      campos.forEach(c => {
+        let v = edit[c.k];
+        if (v === "" || v === undefined) v = null;
+        else if (c.numero) v = Number(v) || null;
+        else if (c.k === "placa") v = String(v).toUpperCase().trim();
+        corpo[c.k] = v;
+      });
+      if (tabela === "veiculos") corpo.empresa_id = edit.empresa_id || null;
+      corpo.atualizado_em = new Date().toISOString();
+
+      if (edit.id) await api.update(tabela, `id=eq.${edit.id}`, corpo);
+      else await api.insert(tabela, [corpo]);
+      setEdit(null); await carregar(); aoMudar?.();
+    } catch (e) { alert("Não consegui salvar. " + (e.message || e)); }
+    setSalvando(false);
+  }
+
+  const rotulo = (o) => tabela === "empresas"
+    ? (o.razao_social || o.nome_fantasia || "—")
+    : `${o.placa || "—"} · ${[o.marca, o.modelo].filter(Boolean).join(" ") || "—"}`;
+  const detalhe = (o) => tabela === "empresas"
+    ? [o.cpf_cnpj, o.cidade].filter(Boolean).join(" · ")
+    : [empresas?.find(e => e.id === o.empresa_id)?.razao_social, o.ano_fabricacao].filter(Boolean).join(" · ");
+
+  const filtrada = lista.filter(o =>
+    !busca.trim() || JSON.stringify(o).toLowerCase().includes(busca.toLowerCase()));
+
+  if (edit) {
+    return (
+      <div style={card}>
+        <div style={{ fontWeight: 700, marginBottom: 14 }}>
+          {edit.id ? `Editar ${titulo.toLowerCase()}` : `Novo ${titulo.toLowerCase()}`}
+        </div>
+        {tabela === "veiculos" && (
+          <label style={{ display: "block", marginBottom: 12 }}>
+            <span style={{ display: "block", fontSize: 12, color: C.sub, marginBottom: 5 }}>Empresa proprietária</span>
+            <select value={edit.empresa_id || ""} onChange={e => setEdit({ ...edit, empresa_id: e.target.value || null })}
+              style={selectEstilo}>
+              <option value="">— sem empresa —</option>
+              {(empresas || []).map(e => <option key={e.id} value={e.id}>{e.razao_social}</option>)}
+            </select>
+          </label>
+        )}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          {campos.map(c => (
+            <div key={c.k} style={c.largo ? { gridColumn: "1 / -1" } : undefined}>
+              <Field label={c.label + (c.obrigatorio ? " *" : "")} value={edit[c.k] ?? ""}
+                onChange={e => setEdit({ ...edit, [c.k]: e.target.value })} />
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+          <button style={btnPrimary} disabled={salvando} onClick={salvar}>{salvando ? "Salvando…" : "Salvar"}</button>
+          <button style={btnGhost} onClick={() => setEdit(null)}>Cancelar</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+        <input placeholder={`Buscar ${titulo.toLowerCase()}…`} value={busca} onChange={e => setBusca(e.target.value)}
+          style={{ flex: 1, padding: "10px 12px", borderRadius: 9, border: `1px solid ${C.line}`, background: C.bg, color: C.ink, fontSize: 14 }} />
+        <button style={btnPrimary} onClick={() => setEdit({})}>+ Novo</button>
+      </div>
+      {erro && <div style={{ ...card, borderColor: C.bad, color: "#ffb4b4", fontSize: 13, marginBottom: 12 }}>{erro}</div>}
+      {carregando ? (
+        <div style={{ color: C.sub, textAlign: "center", padding: 30 }}>Carregando…</div>
+      ) : filtrada.length === 0 ? (
+        <div style={{ ...card, textAlign: "center", color: C.sub, padding: 30 }}>
+          {busca ? "Nada encontrado." : `Nenhum cadastro ainda. Crie o primeiro.`}
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {filtrada.map(o => (
+            <div key={o.id} style={{ ...card, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>{rotulo(o)}</div>
+                <div style={{ fontSize: 12, color: C.sub, marginTop: 2 }}>{detalhe(o) || "—"}</div>
+              </div>
+              <button style={{ ...btnGhost, padding: "7px 12px", fontSize: 13 }} onClick={() => setEdit(o)}>Editar</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const selectEstilo = {
+  width: "100%", padding: "10px 12px", borderRadius: 9, border: `1px solid ${C.line}`,
+  background: C.bg, color: C.ink, fontSize: 15, outline: "none", boxSizing: "border-box",
+};
+
 /* =====================  PAINEL  ===================== */
 function Painel({ aoSair }) {
   const [vistorias, setVistorias] = useState([]);
@@ -622,6 +880,21 @@ function Painel({ aoSair }) {
   const [linkGerado, setLinkGerado] = useState(null);
 
   const [erroLista, setErroLista] = useState(null);
+  const [aba, setAba] = useState("laudos");          // laudos | empresas | veiculos
+  const [empresas, setEmpresas] = useState([]);
+  const [veiculos, setVeiculos] = useState([]);
+
+  // cadastros ficam carregados para alimentar os seletores de nova vistoria
+  const carregarCadastros = useCallback(async () => {
+    try {
+      const [e, v] = await Promise.all([
+        api.select("empresas", "select=*&order=razao_social.asc"),
+        api.select("veiculos", "select=*&order=placa.asc"),
+      ]);
+      setEmpresas(e); setVeiculos(v);
+    } catch (err) { console.error("cadastros:", err.message); }
+  }, []);
+  useEffect(() => { carregarCadastros(); }, [carregarCadastros]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -678,6 +951,28 @@ function Painel({ aoSair }) {
             title={auth.atual?.email || ""}>Sair</button>
         </div>
       </header>
+
+      <div style={{ display: "flex", gap: 6, marginBottom: 20, borderBottom: `1px solid ${C.line}` }}>
+        {[["laudos", "Laudos"], ["empresas", "Empresas"], ["veiculos", "Veículos"]].map(([k, rot]) => (
+          <button key={k} onClick={() => setAba(k)}
+            style={{
+              padding: "9px 15px", border: "none", background: "transparent", cursor: "pointer",
+              fontSize: 14, fontWeight: 700, color: aba === k ? C.brand : C.sub,
+              borderBottom: `2px solid ${aba === k ? C.brand : "transparent"}`, marginBottom: -1,
+            }}>{rot}</button>
+        ))}
+      </div>
+
+      {aba === "empresas" && (
+        <Cadastro tabela="empresas" titulo="Empresa" campos={CAMPOS_EMPRESA}
+          aoMudar={carregarCadastros} />
+      )}
+      {aba === "veiculos" && (
+        <Cadastro tabela="veiculos" titulo="Veículo" campos={CAMPOS_VEICULO_CAD}
+          empresas={empresas} aoMudar={carregarCadastros} />
+      )}
+
+      {aba === "laudos" && (<>
 
       {linkGerado && (
         <div style={{ ...card, borderColor: C.brand, marginBottom: 20 }}>
@@ -776,6 +1071,7 @@ function Painel({ aoSair }) {
           ))}
         </div>
       )}
+      </>)}
     </div>
   );
 }
