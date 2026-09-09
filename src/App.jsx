@@ -791,6 +791,7 @@ const TERMO = `O objetivo da presente vistoria é a verificação da procedênci
 
 /* ---------- sessao do painel (Supabase Auth) ---------- */
 const CHAVE_SESSAO = "soares_vistoria_sessao";
+const CHAVE_RASCUNHO = "soares_vistoria_rascunho_";
 let SESSAO = null;
 try { SESSAO = JSON.parse(localStorage.getItem(CHAVE_SESSAO) || "null"); } catch { SESSAO = null; }
 
@@ -1442,6 +1443,8 @@ function Formulario({ token }) {
   const [itens, setItens] = useState({});
   const [fotos, setFotos] = useState([]);
   const [obs, setObs] = useState({});   // observacao por item (V2)
+  const [rascunho, setRascunho] = useState(null);   // {salvoEm, restaurado}
+  const salvando = useRef(false);
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const fileRef = useRef();
@@ -1467,10 +1470,43 @@ function Formulario({ token }) {
         t.secoes.forEach(sec => {
           sec.itens.forEach(it => { init[`${sec.nome}||${it}`] = ESCALAS[sec.escala].padrao; });
         });
-        setItens(init);
+
+        // rascunho do servidor tem prioridade; o local cobre queda de rede
+        let r = d.rascunho || null;
+        try {
+          const local = JSON.parse(localStorage.getItem(CHAVE_RASCUNHO + token) || "null");
+          if (local && (!r || (local.em || 0) > new Date(d.rascunho_em || 0).getTime())) r = local;
+        } catch { /* localStorage indisponivel */ }
+
+        if (r) {
+          setItens({ ...init, ...(r.itens || {}) });
+          setObs(r.obs || {});
+          if (r.dados) setDados(x => ({ ...x, ...r.dados }));
+          if (typeof r.passo === "number") setPasso(r.passo);
+          setRascunho({ salvoEm: d.rascunho_em || r.em, restaurado: true });
+        } else {
+          setItens(init);
+        }
       } catch (e) { setErro("Erro ao carregar: " + e.message); }
     })();
   }, [token]);
+
+  // grava a cada passo: local na hora, servidor logo em seguida.
+  // as fotos ficam de fora — sao blobs, nao cabem em rascunho
+  const gravarRascunho = useCallback(async (passoAtual) => {
+    if (!vist || salvando.current) return;
+    const corpo = { itens, obs, dados, passo: passoAtual, em: Date.now() };
+    try { localStorage.setItem(CHAVE_RASCUNHO + token, JSON.stringify(corpo)); } catch {}
+    salvando.current = true;
+    try {
+      const em = await api.rpc("salvar_rascunho", { p_token: token, p_rascunho: corpo });
+      setRascunho({ salvoEm: em, restaurado: false });
+    } catch (e) {
+      // sem rede o local ja guardou; nao interrompe a vistoria
+      setRascunho(r => ({ ...(r || {}), erro: true }));
+    }
+    salvando.current = false;
+  }, [vist, token, itens, obs, dados]);
 
   const tipo = tipoDe(vist);
   const secoes = tipo.secoes;
@@ -1577,6 +1613,7 @@ function Formulario({ token }) {
         p_itens: itemRows,
         p_fotos: fotoRows,
       });
+      try { localStorage.removeItem(CHAVE_RASCUNHO + token); } catch {}
       setEnviado(true);
     } catch (e) { alert("Erro ao enviar: " + e.message); }
     setEnviando(false);
@@ -1591,9 +1628,23 @@ function Formulario({ token }) {
   return (
     <div style={{ maxWidth: 560, margin: "0 auto", padding: "16px 14px 100px" }}>
       <div style={{ fontSize: 12, letterSpacing: 2, color: C.brand, fontWeight: 700 }}>{tipo.nome.toUpperCase()}</div>
-      <div style={{ height: 6, background: C.chip, borderRadius: 20, margin: "10px 0 18px", overflow: "hidden" }}>
+      <div style={{ height: 6, background: C.chip, borderRadius: 20, margin: "10px 0 10px", overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${pct}%`, background: C.brand, transition: "width .3s" }} />
       </div>
+
+      {rascunho && (
+        <div style={{
+          fontSize: 11.5, marginBottom: 14, padding: "7px 10px", borderRadius: 8,
+          background: rascunho.erro ? "#3a2d1d" : C.chip,
+          color: rascunho.erro ? "#f5c97a" : C.sub,
+        }}>
+          {rascunho.erro
+            ? "Sem conexão — o preenchimento está guardado neste aparelho e será enviado quando a rede voltar."
+            : rascunho.restaurado
+              ? "Rascunho retomado de " + new Date(rascunho.salvoEm).toLocaleString("pt-BR") + ". Continue de onde parou."
+              : "Rascunho salvo às " + new Date(rascunho.salvoEm).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+        </div>
+      )}
 
       {passo === 0 && (
         <div style={card}>
@@ -1758,9 +1809,9 @@ function Formulario({ token }) {
         background: C.panel, borderTop: `1px solid ${C.line}`, display: "flex", gap: 8,
         maxWidth: 560, margin: "0 auto",
       }}>
-        {passo > 0 && <button style={btnGhost} onClick={() => setPasso(passo - 1)}>Voltar</button>}
+        {passo > 0 && <button style={btnGhost} onClick={() => { const n = passo - 1; setPasso(n); gravarRascunho(n); }}>Voltar</button>}
         {passo < totalPassos - 1 ? (
-          <button style={{ ...btnPrimary, flex: 1 }} onClick={() => setPasso(passo + 1)}>Continuar</button>
+          <button style={{ ...btnPrimary, flex: 1 }} onClick={() => { const n = passo + 1; setPasso(n); gravarRascunho(n); }}>Continuar</button>
         ) : (
           <button style={{ ...btnPrimary, flex: 1, background: C.ok }} disabled={enviando} onClick={enviar}>
             {enviando ? "Enviando…" : "Finalizar e enviar laudo"}
