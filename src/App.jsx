@@ -169,16 +169,45 @@ const SSMA_SECOES = [
 
 
 /* Escalas de resposta. `reprova` define o que derruba o parecer final. */
+/* Cada escala declara o SIGNIFICADO de cada resposta: `bom`, `neutro`,
+   `ressalva` e `reprova`. Cor e parecer sao derivados daqui, e nao de
+   listas de texto espalhadas pelo codigo — foi o que fez o laudo
+   estrutural sair com "APROVADO" em vermelho. */
 const ESCALAS = {
-  estado: { opcoes: ["OK", "NAO APLICAVEL", "NAO CONFORME"], padrao: "OK", reprova: ["NAO CONFORME"] },
-  original: { opcoes: ["ORIGINAL", "NAO APLICAVEL", "REMARCADO"], padrao: "ORIGINAL", reprova: ["REMARCADO"] },
-  conforme: { opcoes: ["SIM", "N/A", "NAO"], padrao: "SIM", reprova: ["NAO"] },
+  estado: {
+    opcoes: ["OK", "NAO APLICAVEL", "NAO CONFORME"], padrao: "OK",
+    bom: ["OK"], neutro: ["NAO APLICAVEL"], ressalva: [], reprova: ["NAO CONFORME"],
+  },
+  original: {
+    opcoes: ["ORIGINAL", "NAO APLICAVEL", "REMARCADO"], padrao: "ORIGINAL",
+    bom: ["ORIGINAL"], neutro: ["NAO APLICAVEL"], ressalva: [], reprova: ["REMARCADO"],
+  },
+  conforme: {
+    opcoes: ["SIM", "N/A", "NAO"], padrao: "SIM",
+    bom: ["SIM"], neutro: ["N/A"], ressalva: [], reprova: ["NAO"],
+  },
   // o laudo estrutural tem um terceiro estado: atende, mas com ressalva
   estrutural: {
-    opcoes: ["APROVADO", "RESTRIÇÃO", "REPROVADO"],
-    padrao: "APROVADO", reprova: ["REPROVADO"], ressalva: ["RESTRIÇÃO"],
+    opcoes: ["APROVADO", "RESTRIÇÃO", "REPROVADO"], padrao: "APROVADO",
+    bom: ["APROVADO"], neutro: [], ressalva: ["RESTRIÇÃO"], reprova: ["REPROVADO"],
   },
 };
+
+/* cores unicas do sistema, usadas no formulario e no laudo */
+const COR_RESULTADO = { bom: "#16a34a", neutro: "#94a3b8", ressalva: "#f59e0b", reprova: "#dc2626" };
+
+/* classifica uma resposta consultando as escalas; desconhecida vira neutro
+   em vez de "reprovado", para nunca pintar de vermelho o que nao foi julgado */
+function classe(resultado) {
+  for (const e of Object.values(ESCALAS)) {
+    if (e.bom?.includes(resultado)) return "bom";
+    if (e.ressalva?.includes(resultado)) return "ressalva";
+    if (e.reprova?.includes(resultado)) return "reprova";
+    if (e.neutro?.includes(resultado)) return "neutro";
+  }
+  return "neutro";
+}
+const corResultado = (r) => COR_RESULTADO[classe(r)];
 
 const reprova = (resultado) =>
   Object.values(ESCALAS).some((e) => e.reprova.includes(resultado));
@@ -710,6 +739,43 @@ function Login({ aoEntrar }) {
 }
 
 
+
+/* ============================================================
+   Normalizacao de foto
+   O iPhone entrega HEIC, que navegador nenhum exibe — foi o que
+   deixou o registro fotografico quebrado. Alem disso o arquivo cru
+   passa de 2,5 MB, e um laudo com 88 fotos chegava a ~230 MB.
+   Toda foto e decodificada, reduzida e reescrita como JPEG ainda no
+   aparelho. Se o navegador nao souber decodificar, a foto e recusada
+   na hora com aviso, em vez de subir um arquivo que ninguem abre.
+   ============================================================ */
+const FOTO_LADO_MAX = 1600;
+const FOTO_QUALIDADE = 0.82;
+
+async function normalizarFoto(file) {
+  let bmp;
+  try {
+    bmp = await createImageBitmap(file);
+  } catch {
+    const ext = (file.name.split(".").pop() || "").toUpperCase();
+    throw new Error(
+      `Não consegui ler "${file.name}"${ext ? ` (${ext})` : ""}. ` +
+      `Se for uma foto de iPhone, abra Ajustes › Câmera › Formatos e escolha "Mais Compatível", ` +
+      `ou envie a foto pelo próprio aplicativo da câmera.`
+    );
+  }
+  const escala = Math.min(1, FOTO_LADO_MAX / Math.max(bmp.width, bmp.height));
+  const w = Math.max(1, Math.round(bmp.width * escala));
+  const h = Math.max(1, Math.round(bmp.height * escala));
+  const cv = document.createElement("canvas");
+  cv.width = w; cv.height = h;
+  cv.getContext("2d").drawImage(bmp, 0, 0, w, h);
+  bmp.close?.();
+  const blob = await new Promise(r => cv.toBlob(r, "image/jpeg", FOTO_QUALIDADE));
+  if (!blob) throw new Error(`Não consegui converter "${file.name}".`);
+  return blob;
+}
+
 /* =====================  CADASTROS (empresa e veiculo)  ===================== */
 const CAMPOS_EMPRESA = [
   { k: "razao_social", label: "Razão social", largo: true, obrigatorio: true },
@@ -1118,14 +1184,26 @@ function Formulario({ token }) {
   const secoes = tipo.secoes;
   const totalPassos = 1 + secoes.length + 1; // dados + secoes + fotos
 
+  const [preparando, setPreparando] = useState(0);
+
   async function addFotos(files) {
+    setPreparando(files.length);
+    const recusadas = [];
     for (const f of files) {
-      const id = Math.random().toString(36).slice(2);
-      setFotos(prev => [...prev, {
-        id, file: f, legenda: "", preview: URL.createObjectURL(f),
-        nivel: tipo.porFoto ? 1 : null,
-      }]);
+      try {
+        const blob = await normalizarFoto(f);
+        const id = Math.random().toString(36).slice(2);
+        setFotos(prev => [...prev, {
+          id, blob, legenda: "", preview: URL.createObjectURL(blob),
+          nivel: tipo.porFoto ? 1 : null,
+        }]);
+      } catch (e) {
+        recusadas.push(e.message);
+      }
+      setPreparando(n => n - 1);
     }
+    setPreparando(0);
+    if (recusadas.length) alert(recusadas.join(String.fromCharCode(10, 10)));
   }
 
   async function enviar() {
@@ -1143,9 +1221,9 @@ function Formulario({ token }) {
       const fotoRows = [];
       let i = 0;
       for (const f of fotos) {
-        const ext = (f.file.name.split(".").pop() || "jpg").toLowerCase();
-        const path = `${vist.id}/${Date.now()}_${i}.${ext}`;
-        const url = await api.uploadFoto(f.file, path);
+        // sempre jpeg: o blob ja foi normalizado ao ser adicionado
+        const path = `${vist.id}/${Date.now()}_${i}.jpg`;
+        const url = await api.uploadFoto(f.blob, path);
         fotoRows.push({
           legenda: f.legenda || `Foto ${i + 1}`, url, ordem: i,
           nivel: tipo.porFoto ? f.nivel : null,
@@ -1259,8 +1337,7 @@ function Formulario({ token }) {
                   <div style={{ display: "flex", gap: 6 }}>
                     {esc.opcoes.map(op => {
                       const active = itens[k] === op;
-                      const col = esc.reprova.includes(op) ? C.bad
-                        : (op === "NAO APLICAVEL" || op === "N/A") ? C.sub : C.ok;
+                      const col = corResultado(op);
                       return (
                         <button key={op} onClick={() => setItens({ ...itens, [k]: op })}
                           style={{
@@ -1299,10 +1376,12 @@ function Formulario({ token }) {
             </div>
           )}
 
-          <input ref={fileRef} type="file" accept="image/*" capture="environment" multiple
+          <input ref={fileRef} type="file" multiple
+            accept="image/*,.heic,.heif,.jpg,.jpeg,.png,.webp,.avif"
             style={{ display: "none" }} onChange={e => { addFotos([...e.target.files]); e.target.value = ""; }} />
-          <button style={{ ...btnPrimary, width: "100%", marginBottom: 14 }} onClick={() => fileRef.current?.click()}>
-            📷 Adicionar fotos
+          <button style={{ ...btnPrimary, width: "100%", marginBottom: 14, opacity: preparando ? .6 : 1 }}
+            disabled={!!preparando} onClick={() => fileRef.current?.click()}>
+            {preparando ? `Preparando ${preparando} foto${preparando > 1 ? "s" : ""}…` : "📷 Adicionar fotos"}
           </button>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             {fotos.map(f => (
@@ -1390,6 +1469,12 @@ function Laudo({ id }) {
   const conforme = v.parecer === "CONFORME" || v.parecer === "APROVADO";
   const ring = tipo.porFoto ? resumoRingelmann(fotos) : null;
   const limiteRing = Number(extra.limite) || LIMITE_RINGELMANN_PADRAO;
+  // contagem por classe, para o resumo do fim do laudo
+  const contagem = itens.reduce((a, it) => {
+    const c = classe(it.resultado); a[c] = (a[c] || 0) + 1; a.total++; return a;
+  }, { total: 0 });
+  const pendencias = itens.filter(it => ["reprova", "ressalva"].includes(classe(it.resultado)));
+
   const validade = tipo.validadeMeses
     ? new Date(new Date(v.concluido_em || v.criado_em).setMonth(
         new Date(v.concluido_em || v.criado_em).getMonth() + tipo.validadeMeses))
@@ -1413,14 +1498,11 @@ function Laudo({ id }) {
       <div style={{ fontSize: 13.5, fontWeight: 600, color: "#1a2230" }}>{val || "—"}</div></div>
   );
 
-  const resultColor = (r) =>
-    (r === "OK" || r === "ORIGINAL" || r === "SIM") ? "#16a34a"
-      : (r === "NAO APLICAVEL" || r === "N/A") ? "#94a3b8"
-        : "#dc2626";
+  const resultColor = corResultado;
 
   return (
-    <div style={{ background: "#e9edf2", minHeight: "100vh", padding: "20px 0" }}>
-      <div style={{ maxWidth: 840, margin: "0 auto", padding: "0 14px" }}>
+    <div id="laudo-fundo" style={{ background: "#e9edf2", minHeight: "100vh", padding: "20px 0" }}>
+      <div id="laudo-area" style={{ maxWidth: 840, margin: "0 auto", padding: "0 14px" }}>
         <div className="noprint" style={{ display: "flex", gap: 8, marginBottom: 14 }}>
           <a href="#/" style={{ ...btnGhost, textDecoration: "none", color: "#333", borderColor: "#ccc" }}>← Painel</a>
           <button style={{ ...btnPrimary, background: "#0f2942" }} onClick={() => window.print()}>Imprimir / Salvar PDF</button>
@@ -1574,7 +1656,7 @@ function Laudo({ id }) {
               <SectionTitle>Registro fotográfico</SectionTitle>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginTop: 12 }}>
                 {fotos.map(f => (
-                  <div key={f.id} style={{ breakInside: "avoid" }}>
+                  <div key={f.id} className="foto-item" style={{ breakInside: "avoid" }}>
                     <div style={{ position: "relative" }}>
                       <img src={f.url} alt={f.legenda} style={{ width: "100%", height: 130, objectFit: "cover", borderRadius: 6, border: "1px solid #e4e9ef", display: "block" }} />
                       {f.nivel && (
@@ -1588,6 +1670,50 @@ function Laudo({ id }) {
                     <div style={{ fontSize: 10, color: "#5b6472", textAlign: "center", marginTop: 4, textTransform: "uppercase", letterSpacing: .3 }}>{f.legenda}</div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* ===== RESUMO DO LAUDO (fecha o documento) ===== */}
+          {contagem.total > 0 && (
+            <div className="secao-laudo" style={{ padding: "18px 28px", borderBottom: "1px solid #e4e9ef", background: "#f9fbfc" }}>
+              <SectionTitle>Resumo do laudo</SectionTitle>
+
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                {[
+                  ["Itens inspecionados", contagem.total, "#0f2942"],
+                  ["Aprovados", contagem.bom || 0, COR_RESULTADO.bom],
+                  ["Com restrição", contagem.ressalva || 0, COR_RESULTADO.ressalva],
+                  ["Reprovados", contagem.reprova || 0, COR_RESULTADO.reprova],
+                  ["Não aplicável", contagem.neutro || 0, COR_RESULTADO.neutro],
+                ].map(([rot, n, cor]) => (
+                  <div key={rot} style={{ flex: "1 1 110px", textAlign: "center", padding: "10px 6px", borderRadius: 9, background: "#fff", border: "1px solid #e4e9ef" }}>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: cor, lineHeight: 1.1 }}>{n}</div>
+                    <div style={{ fontSize: 9.5, color: "#5b6472", marginTop: 3, textTransform: "uppercase", letterSpacing: .4 }}>{rot}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ marginTop: 16 }}>
+                <div style={{ fontSize: 10.5, fontWeight: 800, color: "#0f2942", letterSpacing: .6, marginBottom: 8 }}>
+                  {pendencias.length ? "ITENS QUE EXIGEM ATENÇÃO" : "NENHUMA PENDÊNCIA REGISTRADA"}
+                </div>
+                {pendencias.length ? (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px 20px" }}>
+                    {pendencias.map(it => (
+                      <div key={it.id} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 11.5, borderBottom: "1px solid #eef2f6", paddingBottom: 3 }}>
+                        <span style={{ color: "#4b5563" }}>
+                          <span style={{ color: "#8a94a3" }}>{it.secao} · </span>{it.item}
+                        </span>
+                        <span style={{ fontSize: 9.5, fontWeight: 800, padding: "1px 6px", borderRadius: 3, color: "#fff", background: corResultado(it.resultado), whiteSpace: "nowrap" }}>{it.resultado}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 12, color: "#4b5563" }}>
+                    Todos os itens inspecionados foram considerados conformes na data desta vistoria.
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1640,15 +1766,26 @@ function Laudo({ id }) {
       </div>
       <style>{`
         @media print {
+          @page { size: A4 portrait; margin: 10mm }
           .noprint { display: none !important }
-          body { background: #fff }
-          #laudo { box-shadow: none; border-radius: 0 }
-          @page { margin: 8mm }
+          html, body { background: #fff; margin: 0; padding: 0 }
+
+          /* CAUSA DAS MARGENS CORTADAS: o laudo tinha largura fixa de
+             840px e a area imprimivel do A4 e menor, entao o excedente
+             saia fora da folha. Na impressao ele passa a ocupar a
+             largura util da pagina. */
+          #laudo-fundo { padding: 0 !important; background: #fff !important; min-height: 0 !important }
+          #laudo-area  { max-width: none !important; width: auto !important; padding: 0 !important; margin: 0 !important }
+          #laudo { box-shadow: none; border-radius: 0; width: auto !important; max-width: none !important }
+
           /* sem isto o navegador descarta os fundos dos selos e badges */
           #laudo, #laudo * { -webkit-print-color-adjust: exact; print-color-adjust: exact }
-          /* assinatura e rodape nao se separam, e o rodape nao fica orfao */
+
+          /* nada de bloco partido ao meio nem rodape orfao */
           .bloco-fecho { break-inside: avoid; page-break-inside: avoid }
           #laudo img { break-inside: avoid }
+          .secao-laudo { break-inside: avoid-page }
+          .foto-item { break-inside: avoid; page-break-inside: avoid }
         }
       `}</style>
     </div>
