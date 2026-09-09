@@ -1023,16 +1023,36 @@ function Login({ aoEntrar }) {
 const FOTO_LADO_MAX = 1600;
 const FOTO_QUALIDADE = 0.82;
 
+const ehHeic = (f) =>
+  /image\/hei[cf]/i.test(f.type || "") || /\.hei[cf]$/i.test(f.name || "");
+
+/* O decodificador de HEIC pesa ~1,5 MB, entao so e baixado quando aparece
+   um arquivo desse tipo. Navegador nenhum le HEIC nativamente fora do
+   ecossistema Apple, e o Alex envia do computador. */
+let _heic = null;
+async function decodificarHeic(file) {
+  if (!_heic) _heic = import("heic-to").then(m => m.heicTo);
+  const heicTo = await _heic;
+  return heicTo({ blob: file, type: "image/jpeg", quality: FOTO_QUALIDADE });
+}
+
 async function normalizarFoto(file) {
+  let origem = file;
+  if (ehHeic(file)) {
+    try {
+      origem = await decodificarHeic(file);
+    } catch (e) {
+      throw new Error(`Não consegui converter "${file.name}" (HEIC): ${e.message || e}`);
+    }
+  }
   let bmp;
   try {
-    bmp = await createImageBitmap(file);
+    bmp = await createImageBitmap(origem);
   } catch {
     const ext = (file.name.split(".").pop() || "").toUpperCase();
     throw new Error(
       `Não consegui ler "${file.name}"${ext ? ` (${ext})` : ""}. ` +
-      `Se for uma foto de iPhone, abra Ajustes › Câmera › Formatos e escolha "Mais Compatível", ` +
-      `ou envie a foto pelo próprio aplicativo da câmera.`
+      `Envie a foto em JPG ou PNG.`
     );
   }
   const escala = Math.min(1, FOTO_LADO_MAX / Math.max(bmp.width, bmp.height));
