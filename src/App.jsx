@@ -537,7 +537,7 @@ const TIPOS = {
         "Longarina dianteira direita",
         "Longarina traseira esquerda",
         "Longarina traseira direita",
-        "Painel",
+        "Painel dianteiro (estrutura)",
         "Painel corta-fogo",
         "Painel traseiro",
         "Paralama interno esquerdo",
@@ -585,13 +585,10 @@ const TIPOS = {
         "Revestimento interno",
         "Saída de emergência",
         "Retrovisor interno",
-        "Corrimão",
-        "Iluminação interna",
-        "Luz de embarque",
-        "Alarme sonoro de ré"
+        "Corrimão"
       ]},
       { nome: "SISTEMA DE FREIOS", escala: "v2", criterio: "Verificar funcionamento, curso, folgas, vazamentos e condição aparente dos componentes de frenagem.", metodo: "Verificação funcional e inspeção visual", itens: [
-        "Pedal de freio — curso e retorno",
+        "Freio de serviço — pedal, curso e eficiência",
         "Pastilhas de freio dianteiras",
         "Lonas de freio traseiras",
         "Discos e tambores",
@@ -599,9 +596,7 @@ const TIPOS = {
         "Catracas de freio",
         "Circuito — vazamentos pneumáticos",
         "Reservatório de fluido de freio",
-        "Freio de estacionamento",
-        "Teste do freio de serviço",
-        "Teste do freio de estacionamento"
+        "Freio de estacionamento — acionamento e retenção"
       ]},
       { nome: "MOTOR E SISTEMAS ASSOCIADOS", escala: "v2", criterio: "Avaliar funcionamento, vazamentos aparentes e níveis, sem desmontagem ou diagnóstico interno dos conjuntos.", metodo: "Verificação funcional e inspeção visual", itens: [
         "Funcionamento — ruído e falhas",
@@ -623,7 +618,7 @@ const TIPOS = {
         "Terminais e ponteiras",
         "Coifas de proteção",
         "Bomba da direção — vazamento",
-        "Reservatório de fluido",
+        "Reservatório da direção hidráulica",
         "Mangotes hidráulicos",
         "Alinhamento aparente"
       ]},
@@ -652,6 +647,9 @@ const TIPOS = {
         "Retrorrefletores",
         "Luz de placa traseira",
         "Luzes indicadoras do painel",
+        "Iluminação interna",
+        "Luz de embarque",
+        "Alarme sonoro de ré",
         "Instalação elétrica e bateria",
         "Buzina"
       ]},
@@ -688,9 +686,6 @@ const TIPOS = {
         "Teto dianteiro direito",
         "Teto traseiro esquerdo",
         "Teto traseiro direito",
-        "Tampa do porta-malas",
-        "Para-choque dianteiro",
-        "Para-choque traseiro",
         "Capô / tampa dianteira",
         "Logotipo e identificação visual"
       ]},
