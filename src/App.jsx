@@ -192,10 +192,11 @@ const ESCALAS = {
     bom: ["APROVADO"], neutro: [], ressalva: ["RESTRIÇÃO"], reprova: ["REPROVADO"],
   },
 
-  // V2: cinco codigos, com NI como padrao — item nasce nao inspecionado,
-  // para que um checklist nao tocado nunca vire laudo aprovado
+  // V2: cinco codigos. O item nasce em C por decisao do Alex — o
+  // vistoriador altera apenas o que foge do esperado. NI deixa de ser
+  // estado inicial e vira marcacao deliberada, que exige justificativa.
   v2: {
-    opcoes: ["C", "A", "NC", "NA", "NI"], padrao: "NI",
+    opcoes: ["C", "A", "NC", "NA", "NI"], padrao: "C",
     bom: ["C"], neutro: ["NA", "NI"], ressalva: ["A"], reprova: ["NC"],
   },
 };
@@ -1535,17 +1536,12 @@ function Formulario({ token }) {
   }
 
   async function enviar() {
-    // um item que ninguem inspecionou nao pode virar laudo aprovado, e
-    // ocorrencia sem descricao nao e rastreavel
-    const naoInspecionados = Object.entries(itens).filter(([, v]) => v === "NI");
-    if (naoInspecionados.length) {
-      alert("Ainda ha " + naoInspecionados.length + " item(ns) nao inspecionado(s). Classifique todos antes de finalizar.");
-      return;
-    }
+    // toda marcacao que foge do conforme precisa estar justificada:
+    // A e NC pela condicao observada, NI pelo motivo de nao ter avaliado
     const semDescricao = Object.entries(itens)
-      .filter(([k, v]) => ["A", "NC"].includes(v) && !(obs[k] || "").trim());
+      .filter(([k, v]) => ["A", "NC", "NI"].includes(v) && !(obs[k] || "").trim());
     if (semDescricao.length) {
-      alert("Ha " + semDescricao.length + " ocorrencia(s) sem descricao. Descreva a condicao observada em cada item marcado como A ou NC.");
+      alert("Ha " + semDescricao.length + " item(ns) marcado(s) como A, NC ou NI sem justificativa. Descreva a condicao observada ou o motivo de nao ter sido inspecionado.");
       return;
     }
 
@@ -1724,10 +1720,10 @@ function Formulario({ token }) {
                       );
                     })}
                   </div>
-                  {["A", "NC", "RESTRIÇÃO", "REPROVADO", "NAO CONFORME", "NAO", "REMARCADO"].includes(itens[k]) && (
+                  {["A", "NC", "NI", "RESTRIÇÃO", "REPROVADO", "NAO CONFORME", "NAO", "REMARCADO"].includes(itens[k]) && (
                     <textarea value={obs[k] || ""} rows={2}
                       onChange={e => setObs({ ...obs, [k]: e.target.value })}
-                      placeholder="Descreva a condição observada (obrigatório)"
+                      placeholder={itens[k] === "NI" ? "Justifique por que não pôde ser inspecionado (obrigatório)" : "Descreva a condição observada (obrigatório)"}
                       style={{ width: "100%", marginTop: 7, padding: "8px 10px", borderRadius: 8, fontSize: 13,
                         border: `1px solid ${(obs[k] || "").trim() ? C.line : C.warn}`,
                         background: C.bg, color: C.ink, boxSizing: "border-box", resize: "vertical" }} />
