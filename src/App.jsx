@@ -1872,7 +1872,16 @@ function Laudo({ id }) {
              largura util da pagina. */
           #laudo-fundo { padding: 0 !important; background: #fff !important; min-height: 0 !important }
           #laudo-area  { max-width: none !important; width: auto !important; padding: 0 !important; margin: 0 !important }
-          #laudo { box-shadow: none; border-radius: 0; width: auto !important; max-width: none !important }
+          /* A margem da caixa de pagina e sobrescrita pela opcao "Margens"
+             do dialogo de impressao: escolhendo "Nenhuma", o @page acima
+             vira zero e o conteudo encosta na borda do papel — foi o que
+             produziu o PDF sem margem. Por isso a folga de seguranca fica
+             DENTRO do documento, onde nenhum dialogo alcanca. */
+          #laudo {
+            box-shadow: none; border-radius: 0;
+            width: auto !important; max-width: none !important;
+            padding: 7mm !important; box-sizing: border-box;
+          }
 
           /* sem isto o navegador descarta os fundos dos selos e badges */
           #laudo, #laudo * { -webkit-print-color-adjust: exact; print-color-adjust: exact }
