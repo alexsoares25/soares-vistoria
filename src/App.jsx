@@ -191,6 +191,13 @@ const ESCALAS = {
     opcoes: ["APROVADO", "RESTRIÇÃO", "REPROVADO"], padrao: "APROVADO",
     bom: ["APROVADO"], neutro: [], ressalva: ["RESTRIÇÃO"], reprova: ["REPROVADO"],
   },
+
+  // V2: cinco codigos, com NI como padrao — item nasce nao inspecionado,
+  // para que um checklist nao tocado nunca vire laudo aprovado
+  v2: {
+    opcoes: ["C", "A", "NC", "NA", "NI"], padrao: "NI",
+    bom: ["C"], neutro: ["NA", "NI"], ressalva: ["A"], reprova: ["NC"],
+  },
 };
 
 /* cores unicas do sistema, usadas no formulario e no laudo */
@@ -474,6 +481,228 @@ const TIPOS = {
       "RESTRIÇÃO atendem com ressalva e exigem acompanhamento ou correção no prazo definido pelo contratante. " +
       "O laudo reflete a condição do veículo na data e hora de sua realização e não abrange vícios ocultos nem " +
       "componentes inacessíveis à inspeção visual.",
+  },
+
+  cautelar_v2: {
+    id: "cautelar_v2",
+    nome: "Laudo Cautelar V2.0",
+    tituloLaudo: "LAUDO TÉCNICO DE INSPEÇÃO VEICULAR",
+    subtitulo: "Avaliação estrutural, mecânica, funcional e das condições aparentes",
+    resumo: "Estrutura nova — cinco classificações, critério e método por item",
+    criterio: "Inspeção visual, funcional e documental dos sistemas e componentes relacionados neste documento, conforme " +
+      "procedimento interno da contratada. Como referência para inspeção de segurança veicular são considerados os " +
+      "requisitos aplicáveis da série ABNT NBR 14040. A utilização da norma como referência técnica não constitui, por " +
+      "si só, declaração de certificação, acreditação ou conformidade integral.",
+    art: true,
+    validadeMeses: 6,
+    campos: [
+      { k: "prop_razao", label: "Razão social do proprietário", extra: true, largo: true },
+      { k: "prop_fantasia", label: "Nome fantasia", extra: true, largo: true },
+      { k: "prop_cnpj", label: "CPF / CNPJ", extra: true },
+      { k: "prop_responsavel", label: "Responsável", extra: true },
+      { k: "prop_cidade", label: "Cidade / UF", extra: true },
+      { k: "prop_contato", label: "Contato", extra: true },
+      { k: "placa", label: "Placa" },
+      { k: "renavam", label: "Renavam" },
+      { k: "chassi", label: "Chassi", largo: true },
+      { k: "fabricante", label: "Marca" },
+      { k: "modelo", label: "Modelo" },
+      { k: "motor", label: "Número do motor" },
+      { k: "cor", label: "Cor" },
+      { k: "carroceria", label: "Carroceria", extra: true },
+      { k: "tipo_veiculo", label: "Tipo", extra: true },
+      { k: "ano_fab", label: "Ano fabricação" },
+      { k: "ano_mod", label: "Ano modelo" },
+      { k: "combustivel", label: "Combustível" },
+      { k: "capacidade", label: "Capacidade de passageiros", extra: true },
+      { k: "km", label: "Quilometragem" },
+      { k: "situacao", label: "Situação", extra: true },
+      { k: "restricoes", label: "Restrições", extra: true, largo: true },
+      { k: "art", label: "Nº da ART", extra: true },
+    ],
+    secoes: [
+      { nome: "IDENTIFICAÇÃO", escala: "v2", criterio: "Conferir legibilidade, integridade e correspondência dos elementos de identificação com a documentação do veículo.", metodo: "Inspeção visual e verificação documental", itens: [
+        "Placa dianteira",
+        "Placa traseira e lacre",
+        "Gravação do chassi",
+        "Plaqueta do chassi",
+        "Gravação do motor",
+        "Etiquetas de identificação",
+        "CRLV na validade",
+        "Tacógrafo e certificado de aferição"
+      ]},
+      { nome: "ESTRUTURA", escala: "v2", criterio: "Avaliar a condição aparente do elemento estrutural, observando deformações, trincas, corrosão significativa, rupturas, alterações ou reparos aparentes.", metodo: "Inspeção visual", itens: [
+        "Longarina dianteira esquerda",
+        "Longarina dianteira direita",
+        "Longarina traseira esquerda",
+        "Longarina traseira direita",
+        "Painel",
+        "Painel corta-fogo",
+        "Painel traseiro",
+        "Paralama interno esquerdo",
+        "Paralama interno direito",
+        "Torre do amortecedor dianteiro esquerdo",
+        "Torre do amortecedor dianteiro direito",
+        "Coluna dianteira esquerda",
+        "Coluna dianteira direita",
+        "Coluna central esquerda",
+        "Coluna central direita",
+        "Coluna traseira esquerda",
+        "Coluna traseira direita",
+        "Caixa de ar lado esquerdo",
+        "Caixa de ar lado direito",
+        "Teto estrutural",
+        "Assoalho do porta-malas",
+        "Caixa do estepe",
+        "Chassi — travessas e fixações"
+      ]},
+      { nome: "ESTRUTURA EXTERNA E CARROCERIA", escala: "v2", criterio: "Avaliar integridade, conservação, fixação e funcionamento dos elementos externos acessíveis.", metodo: "Inspeção visual e verificação funcional", itens: [
+        "Para-brisa",
+        "Vidro traseiro",
+        "Janelas laterais",
+        "Revestimento externo / chaparia",
+        "Folha das portas e revestimento",
+        "Borracha das portas",
+        "Mancal inferior das portas",
+        "Mancal superior das portas",
+        "Para-choque dianteiro",
+        "Para-choque traseiro",
+        "Espelho retrovisor lado esquerdo",
+        "Espelho retrovisor lado direito",
+        "Limpadores de para-brisa e palhetas",
+        "Quadro das janelas lado esquerdo",
+        "Quadro das janelas lado direito",
+        "Porta-malas e tampas",
+        "Caixa de baterias",
+        "Sistema de escapamento — fixação e vedação"
+      ]},
+      { nome: "ESTRUTURA INTERNA", escala: "v2", criterio: "Avaliar integridade, conservação, fixação e condições de uso dos componentes internos acessíveis.", metodo: "Inspeção visual e verificação funcional", itens: [
+        "Degraus",
+        "Piso dianteiro",
+        "Piso traseiro",
+        "Painel de instrumentos",
+        "Revestimento interno",
+        "Saída de emergência",
+        "Retrovisor interno",
+        "Corrimão",
+        "Iluminação interna",
+        "Luz de embarque",
+        "Alarme sonoro de ré"
+      ]},
+      { nome: "SISTEMA DE FREIOS", escala: "v2", criterio: "Verificar funcionamento, curso, folgas, vazamentos e condição aparente dos componentes de frenagem.", metodo: "Verificação funcional e inspeção visual", itens: [
+        "Pedal de freio — curso e retorno",
+        "Pastilhas de freio dianteiras",
+        "Lonas de freio traseiras",
+        "Discos e tambores",
+        "Cuícas de freio",
+        "Catracas de freio",
+        "Circuito — vazamentos pneumáticos",
+        "Reservatório de fluido de freio",
+        "Freio de estacionamento",
+        "Teste do freio de serviço",
+        "Teste do freio de estacionamento"
+      ]},
+      { nome: "MOTOR E SISTEMAS ASSOCIADOS", escala: "v2", criterio: "Avaliar funcionamento, vazamentos aparentes e níveis, sem desmontagem ou diagnóstico interno dos conjuntos.", metodo: "Verificação funcional e inspeção visual", itens: [
+        "Funcionamento — ruído e falhas",
+        "Partida",
+        "Vazamentos aparentes",
+        "Nível de óleo",
+        "Correias",
+        "Freio motor",
+        "Reservatório de água",
+        "Sistema de arrefecimento — mangueiras",
+        "Reservatório de fluido de embreagem",
+        "Filtro de combustível e separador de água",
+        "Indicador do filtro de ar",
+        "Compressor de ar"
+      ]},
+      { nome: "SISTEMA DE DIREÇÃO", escala: "v2", criterio: "Verificar folgas, vazamentos, fixações e integridade dos componentes do sistema de direção.", metodo: "Verificação funcional e inspeção visual", itens: [
+        "Volante e coluna de direção",
+        "Setor e barra de direção — folgas",
+        "Terminais e ponteiras",
+        "Coifas de proteção",
+        "Bomba da direção — vazamento",
+        "Reservatório de fluido",
+        "Mangotes hidráulicos",
+        "Alinhamento aparente"
+      ]},
+      { nome: "SUSPENSÃO E EIXOS", escala: "v2", criterio: "Avaliar condição aparente, fixação e desgaste dos elementos de suspensão e eixos.", metodo: "Inspeção visual", itens: [
+        "Amortecedores",
+        "Molas e feixes",
+        "Brincos de mola",
+        "Mangas de eixo",
+        "Elementos de fixação",
+        "Barra estabilizadora",
+        "Suspensão pneumática — bolsas e vazamentos",
+        "Eixos — integridade aparente"
+      ]},
+      { nome: "SISTEMA ELÉTRICO E ILUMINAÇÃO", escala: "v2", criterio: "Verificar funcionamento dos dispositivos de iluminação e sinalização e a condição aparente da instalação elétrica.", metodo: "Verificação funcional", itens: [
+        "Chave geral elétrica",
+        "Faróis — baixo",
+        "Faróis — alto",
+        "Faróis auxiliares",
+        "Lanternas traseiras",
+        "Luz de freio",
+        "Brake light",
+        "Luz de marcha à ré",
+        "Setas dianteiras",
+        "Setas traseiras",
+        "Pisca-alerta",
+        "Retrorrefletores",
+        "Luz de placa traseira",
+        "Luzes indicadoras do painel",
+        "Instalação elétrica e bateria",
+        "Buzina"
+      ]},
+      { nome: "PNEUS E RODAS", escala: "v2", criterio: "Avaliar profundidade de sulco, estado geral, simetria e fixação de pneus e rodas.", metodo: "Inspeção visual e medição de sulco", itens: [
+        "Sulco — eixo dianteiro esquerdo",
+        "Sulco — eixo dianteiro direito",
+        "Sulco — eixo traseiro esquerdo",
+        "Sulco — eixo traseiro direito",
+        "Estado geral dos pneus",
+        "Simetria de pneus e rodas",
+        "Rodas — trincas e deformações",
+        "Fixação e torque das rodas",
+        "Sinalizadores de torque",
+        "Pneu estepe"
+      ]},
+      { nome: "EQUIPAMENTOS DE SEGURANÇA", escala: "v2", criterio: "Verificar presença, validade, fixação e condição de uso dos equipamentos obrigatórios.", metodo: "Inspeção visual e verificação documental", itens: [
+        "Extintor de incêndio — classe e validade",
+        "Triângulo refletivo",
+        "Chave de roda",
+        "Macaco",
+        "Calços para as rodas",
+        "Coletes refletivos",
+        "Cintos de segurança — condutor",
+        "Botoeira de emergência",
+        "Martelo de emergência",
+        "Kit de primeiros socorros"
+      ]},
+      { nome: "PINTURA E LATARIA", escala: "v2", criterio: "Avaliar condições aparentes de pintura e lataria, observando danos, riscos, amassamentos, descascamentos e reparos visíveis.", metodo: "Inspeção visual", itens: [
+        "Lateral dianteira esquerda",
+        "Lateral traseira esquerda",
+        "Lateral dianteira direita",
+        "Lateral traseira direita",
+        "Teto dianteiro esquerdo",
+        "Teto dianteiro direito",
+        "Teto traseiro esquerdo",
+        "Teto traseiro direito",
+        "Tampa do porta-malas",
+        "Para-choque dianteiro",
+        "Para-choque traseiro",
+        "Capô / tampa dianteira",
+        "Logotipo e identificação visual"
+      ]},
+    ],
+    fotos: ["Frente 45º direito", "Frente 45º esquerdo", "Traseira 45º direito",
+      "Traseira 45º esquerdo", "Hodômetro", "Chassi", "Motor", "Painel"],
+    legenda: "C conforme · A atenção · NC não conforme · NA não aplicável · NI não inspecionado",
+    termo: "A inspeção foi realizada nas condições apresentadas pelo veículo no momento da vistoria, limitada às condições de " +
+      "acesso, funcionamento, limpeza, iluminação e disponibilidade existentes durante a execução do serviço. A inspeção " +
+      "visual não permite identificar integralmente defeitos internos, ocultos, intermitentes ou condições que somente " +
+      "possam ser determinadas mediante desmontagem, ensaio específico ou equipamento especializado. A ausência de " +
+      "apontamento em determinado item significa que nenhuma condição relevante foi identificada pelo método empregado, " +
+      "não constituindo garantia de inexistência absoluta de falhas não detectáveis.",
   },
 
 };
@@ -1192,6 +1421,7 @@ function Formulario({ token }) {
   const [dados, setDados] = useState({});
   const [itens, setItens] = useState({});
   const [fotos, setFotos] = useState([]);
+  const [obs, setObs] = useState({});   // observacao por item (V2)
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const fileRef = useRef();
@@ -1249,6 +1479,20 @@ function Formulario({ token }) {
   }
 
   async function enviar() {
+    // um item que ninguem inspecionou nao pode virar laudo aprovado, e
+    // ocorrencia sem descricao nao e rastreavel
+    const naoInspecionados = Object.entries(itens).filter(([, v]) => v === "NI");
+    if (naoInspecionados.length) {
+      alert("Ainda ha " + naoInspecionados.length + " item(ns) nao inspecionado(s). Classifique todos antes de finalizar.");
+      return;
+    }
+    const semDescricao = Object.entries(itens)
+      .filter(([k, v]) => ["A", "NC"].includes(v) && !(obs[k] || "").trim());
+    if (semDescricao.length) {
+      alert("Ha " + semDescricao.length + " ocorrencia(s) sem descricao. Descreva a condicao observada em cada item marcado como A ou NC.");
+      return;
+    }
+
     // laudo de medicao sem medicao nao pode gerar parecer
     if (tipo.porFoto && !fotos.some(f => f.nivel)) {
       alert("Este laudo é uma medição: anexe ao menos uma foto da fumaça e marque o nível da escala Ringelmann antes de finalizar.");
@@ -1277,9 +1521,16 @@ function Formulario({ token }) {
       // 2. itens do checklist
       const itemRows = [];
       let ord = 0;
+      const porNome = Object.fromEntries(secoes.map(x => [x.nome, x]));
       Object.entries(itens).forEach(([k, v]) => {
         const [secao, item] = k.split("||");
-        itemRows.push({ secao, item, resultado: v, ordem: ord++ });
+        const cfg = porNome[secao] || {};
+        itemRows.push({
+          secao, item, resultado: v, ordem: ord++,
+          criterio: cfg.criterio || null,
+          metodo: cfg.metodo || null,
+          observacao: (obs[k] || "").trim() || null,
+        });
       });
 
       // 3. separa colunas proprias dos campos que vao em dados_extra
@@ -1359,7 +1610,18 @@ function Formulario({ token }) {
             <div style={{ fontSize: 12, color: C.sub, marginBottom: 10 }}>
               {tipo.legenda || "Toque para marcar cada item."}
             </div>
-            {sec.itens.length > 8 && (
+            {sec.criterio && (
+              <div style={{ background: C.bg, borderRadius: 9, padding: "9px 11px", marginBottom: 14, border: `1px solid ${C.line}` }}>
+                <div style={{ fontSize: 10, letterSpacing: .6, color: C.brand, fontWeight: 700, marginBottom: 3 }}>CRITÉRIO</div>
+                <div style={{ fontSize: 12, color: C.sub, lineHeight: 1.5 }}>{sec.criterio}</div>
+                {sec.metodo && (
+                  <div style={{ fontSize: 11.5, color: C.sub, marginTop: 6 }}>
+                    <b style={{ color: C.ink, fontWeight: 600 }}>Método:</b> {sec.metodo}
+                  </div>
+                )}
+              </div>
+            )}
+            {sec.itens.length > 2 && (
               <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
                 <span style={{ fontSize: 11, color: C.sub, alignSelf: "center" }}>Marcar todos:</span>
                 {esc.opcoes.map(op => (
@@ -1391,6 +1653,14 @@ function Formulario({ token }) {
                       );
                     })}
                   </div>
+                  {["A", "NC", "RESTRIÇÃO", "REPROVADO", "NAO CONFORME", "NAO", "REMARCADO"].includes(itens[k]) && (
+                    <textarea value={obs[k] || ""} rows={2}
+                      onChange={e => setObs({ ...obs, [k]: e.target.value })}
+                      placeholder="Descreva a condição observada (obrigatório)"
+                      style={{ width: "100%", marginTop: 7, padding: "8px 10px", borderRadius: 8, fontSize: 13,
+                        border: `1px solid ${(obs[k] || "").trim() ? C.line : C.warn}`,
+                        background: C.bg, color: C.ink, boxSizing: "border-box", resize: "vertical" }} />
+                  )}
                 </div>
               );
             })}
@@ -1516,6 +1786,12 @@ function Laudo({ id }) {
     const c = classe(it.resultado); a[c] = (a[c] || 0) + 1; a.total++; return a;
   }, { total: 0 });
   const pendencias = itens.filter(it => ["reprova", "ressalva"].includes(classe(it.resultado)));
+
+  // o vocabulario do resumo acompanha o tipo: o V2 fala conforme/atencao/
+  // nao conforme, os demais aprovado/restricao/reprovado
+  const rotulos = v.tipo === "cautelar_v2"
+    ? { bom: "Conformes", ressalva: "Atenção", reprova: "Não conformes", neutro: "Não aplicáveis" }
+    : { bom: "Aprovados", ressalva: "Com restrição", reprova: "Reprovados", neutro: "Não aplicável" };
 
   const validade = tipo.validadeMeses
     ? new Date(new Date(v.concluido_em || v.criado_em).setMonth(
@@ -1723,11 +1999,11 @@ function Laudo({ id }) {
 
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
                 {[
-                  ["Itens inspecionados", contagem.total, "#0f2942"],
-                  ["Aprovados", contagem.bom || 0, COR_RESULTADO.bom],
-                  ["Com restrição", contagem.ressalva || 0, COR_RESULTADO.ressalva],
-                  ["Reprovados", contagem.reprova || 0, COR_RESULTADO.reprova],
-                  ["Não aplicável", contagem.neutro || 0, COR_RESULTADO.neutro],
+                  ["Itens avaliados", contagem.total, "#0f2942"],
+                  [rotulos.bom, contagem.bom || 0, COR_RESULTADO.bom],
+                  [rotulos.ressalva, contagem.ressalva || 0, COR_RESULTADO.ressalva],
+                  [rotulos.reprova, contagem.reprova || 0, COR_RESULTADO.reprova],
+                  [rotulos.neutro, contagem.neutro || 0, COR_RESULTADO.neutro],
                 ].map(([rot, n, cor]) => (
                   <div key={rot} style={{ flex: "1 1 110px", textAlign: "center", padding: "10px 6px", borderRadius: 9, background: "#fff", border: "1px solid #e4e9ef" }}>
                     <div style={{ fontSize: 22, fontWeight: 800, color: cor, lineHeight: 1.1 }}>{n}</div>
@@ -1741,13 +2017,18 @@ function Laudo({ id }) {
                   {pendencias.length ? "ITENS QUE EXIGEM ATENÇÃO" : "NENHUMA PENDÊNCIA REGISTRADA"}
                 </div>
                 {pendencias.length ? (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px 20px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: pendencias.some(x => x.observacao) ? "1fr" : "1fr 1fr", gap: "7px 20px" }}>
                     {pendencias.map(it => (
-                      <div key={it.id} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 11.5, borderBottom: "1px solid #eef2f6", paddingBottom: 3 }}>
-                        <span style={{ color: "#4b5563" }}>
-                          <span style={{ color: "#8a94a3" }}>{it.secao} · </span>{it.item}
-                        </span>
-                        <span style={{ fontSize: 9.5, fontWeight: 800, padding: "1px 6px", borderRadius: 3, color: "#fff", background: corResultado(it.resultado), whiteSpace: "nowrap" }}>{it.resultado}</span>
+                      <div key={it.id} style={{ borderBottom: "1px solid #eef2f6", paddingBottom: 5, breakInside: "avoid" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 11.5 }}>
+                          <span style={{ color: "#4b5563" }}>
+                            <span style={{ color: "#8a94a3" }}>{it.secao} · </span>{it.item}
+                          </span>
+                          <span style={{ fontSize: 9.5, fontWeight: 800, padding: "1px 6px", borderRadius: 3, color: "#fff", background: corResultado(it.resultado), whiteSpace: "nowrap" }}>{it.resultado}</span>
+                        </div>
+                        {it.observacao && (
+                          <div style={{ fontSize: 10.5, color: "#6b7280", lineHeight: 1.5, marginTop: 2, paddingLeft: 2 }}>{it.observacao}</div>
+                        )}
                       </div>
                     ))}
                   </div>
